@@ -18,9 +18,42 @@ export const consumptionKeysSchema = z.enum([
 
 export type ConsumptionKeys = z.infer<typeof consumptionKeysSchema>;
 
+export const validConsumptionKeys = consumptionKeysSchema.options;
+
 export const consumptionDataSchema = z.object({
   timestamp: z.string(),
   data: z.record(consumptionKeysSchema, z.number()),
 });
 
 export type ConsumptionData = z.infer<typeof consumptionDataSchema>;
+
+export function translateKey(key: ConsumptionKeys) {
+  switch (key) {
+    case 'ActualConsumption':
+      return 'Actual consumption';
+    case 'ActualReturndelivery':
+      return 'Actual return delivery';
+    case 'L1InstantPowerUsage':
+      return 'L1 Instant power usage';
+    case 'L2InstantPowerUsage':
+      return 'L2 Instant power usage';
+    case 'L3InstantPowerUsage':
+      return 'L3 Instant power usage';
+    case 'L1InstantPowerCurrent':
+      return 'L1 Instant power current';
+    case 'L2InstantPowerCurrent':
+      return 'L2 Instant power current';
+    case 'L3InstantPowerCurrent':
+      return 'L3 Instant power current';
+    case 'L1Voltage':
+      return 'L1 voltage';
+    case 'L2Voltage':
+      return 'L2 voltage';
+    case 'L3Voltage':
+      return 'L3 voltage';
+    case 'CumulativePowerConsumption':
+      return 'Cumulative power consumption';
+    case 'CumulativePowerYield':
+      return 'Cumulative power yield';
+  }
+}

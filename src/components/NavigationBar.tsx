@@ -13,12 +13,10 @@ function NavigationBar() {
   return (
     <Box
       sx={{
-        width: 200,
-        bgcolor: 'background.paper',
-        borderRight: '1px solid #eee',
+        width: 150,
       }}
     >
-      <List>
+      <List sx={{paddingTop: 0, paddingBottom: 0}}>
         {navItems.map((item) => (
           <NavItem key={item.path} hidden={!isAuthenticated} route={item.path} startIcon={null} routeName={item.text} />
         ))}

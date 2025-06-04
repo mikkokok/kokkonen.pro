@@ -1,8 +1,9 @@
-import {HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel} from '@microsoft/signalr';
+import {HubConnection, HubConnectionBuilder, LogLevel} from '@microsoft/signalr';
 import {useEffect, useRef, useState} from 'react';
 import {apiScopes, electricityUrl} from '../config/config';
-import {ConsumptionData, consumptionDataSchema} from '../types/electricity/consumptionData';
+import {ConsumptionData, consumptionDataSchema, translateKey, validConsumptionKeys} from '../types/electricity/consumptionData';
 import {useAccount, useMsal} from '@azure/msal-react';
+import {useNavigate} from 'react-router-dom';
 
 function Electricity() {
   const connection = useRef<HubConnection | null>(null);
@@ -10,15 +11,21 @@ function Electricity() {
   const [latestConsumptionData, setLatestConsumptionData] = useState<ConsumptionData | null>(null);
   const account = useAccount();
   const {instance} = useMsal();
+  const navigate = useNavigate();
 
+  // if (!account) {
+  //   await navigate('/', {replace: true});
+  // }
   useEffect(() => {
     const currentConnection = connection.current;
 
     if (!currentConnection) {
-      setConnectionStatus(`Connecting to ${electricityUrl}`);
       if (!account) {
-        throw 'error no account';
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        navigate('/');
+        return;
       }
+      setConnectionStatus(`Connecting to ${electricityUrl}`);
       const fetchApiToken = async () => {
         try {
           const apiToken = await instance.acquireTokenSilent({
@@ -39,7 +46,6 @@ function Electricity() {
         .build();
 
       hubConnection.on('broadcastConsumptionData', (data: ConsumptionData) => {
-        console.log('got data', data);
         try {
           const validatedData = consumptionDataSchema.parse(data);
           setLatestConsumptionData(validatedData);
@@ -62,13 +68,19 @@ function Electricity() {
       void startHubConn();
       connection.current = hubConnection;
     }
-  }, [latestConsumptionData, connectionStatus, account, instance]);
+  }, [latestConsumptionData, connectionStatus, account, instance, navigate]);
 
   return (
     <div>
-      <div>Electricity! {connectionStatus}</div>
+      <h2>Electricity consumption</h2>
+      <div>{connectionStatus}</div>
       <div>Updated: {latestConsumptionData?.timestamp}</div>
-      <div>Updated: {latestConsumptionData?.data.ActualConsumption}</div>
+      {latestConsumptionData &&
+        validConsumptionKeys.map((key) => (
+          <div key={key}>
+            {translateKey(key)}: {latestConsumptionData.data[key]}
+          </div>
+        ))}
     </div>
   );
 }
