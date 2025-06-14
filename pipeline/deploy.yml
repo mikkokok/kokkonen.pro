@@ -1,0 +1,57 @@
+trigger:
+- main
+
+variables:
+  artifactName: 'react-app'
+
+stages:
+- stage: Build
+  displayName: 'Build React App'
+  jobs:
+  - job: Build
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - checkout: self
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Install Node.js'
+    - script: |
+        npm ci
+        npm run build
+      displayName: 'Build React App'
+    - publish: 'build'
+      artifact: $(artifactName)
+
+- stage: Deploy
+  displayName: 'Deploy to local'
+  dependsOn: Build
+  jobs:
+  - deployment: Deploy
+    displayName: 'Deploy on Local Ubuntu Agent'
+    pool:
+      name: 'local'
+    steps:
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: '$(artifactName)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'mikkokok'
+        KeyVaultName: 'kv-kokkonenpro '
+        SecretsFilter: '*'
+        RunAsPreJob: true
+    - pwsh: |
+        $source = "$(System.ArtifactsDirectory)\$(artifactName)\*"
+        $dest = "C:\inetpub\wwwroot\kokkonen.pro"
+        .\pipeline\deploy.ps1 `
+            -WebServerIp "$(webServerIp)" `
+            -WebServerUser "$(webServerUser)" `
+            -WebServerPassword "$(webServerPassword)" `
+            -Source $source `
+            -Dest $dest
+      displayName: 'Copy files to remote web server (PowerShell Script)'

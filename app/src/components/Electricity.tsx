@@ -13,9 +13,6 @@ function Electricity() {
   const {instance} = useMsal();
   const navigate = useNavigate();
 
-  // if (!account) {
-  //   await navigate('/', {replace: true});
-  // }
   useEffect(() => {
     const currentConnection = connection.current;
 
