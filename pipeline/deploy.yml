@@ -28,34 +28,30 @@ stages:
   displayName: 'Deploy to local'
   dependsOn: Build
   jobs:
-  - deployment: Deploy
+  - job: Deploy
     displayName: 'Deploy on Local Ubuntu Agent'
     pool:
       name: 'local'
-    environment: 'local'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: DownloadBuildArtifacts@0
-            inputs:
-              buildType: 'current'
-              downloadType: 'single'
-              artifactName: '$(artifactName)'
-              downloadPath: '$(System.ArtifactsDirectory)'
-          - task: AzureKeyVault@2
-            inputs:
-              azureSubscription: 'mikkokok'
-              KeyVaultName: 'kv-kokkonenpro'
-              SecretsFilter: '*'
-              RunAsPreJob: true
-          - pwsh: |
-              $source = "$(System.ArtifactsDirectory)\$(artifactName)\*"
-              $dest = "C:\inetpub\wwwroot\kokkonen.pro"
-              .\pipeline\deploy.ps1 `
-                  -WebServerIp "$(webServerIp)" `
-                  -WebServerUser "$(webServerUser)" `
-                  -WebServerPassword "$(webServerPassword)" `
-                  -Source $source `
-                  -Dest $dest
-            displayName: 'Copy files to remote web server (PowerShell Script)'
+    steps:
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: '$(artifactName)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'mikkokok'
+        KeyVaultName: 'kv-kokkonenpro'
+        SecretsFilter: '*'
+        RunAsPreJob: true
+    - pwsh: |
+        $source = "$(System.ArtifactsDirectory)\$(artifactName)\*"
+        $dest = "C:\inetpub\wwwroot\kokkonen.pro"
+        .\pipeline\deploy.ps1 `
+            -WebServerIp "$(webServerIp)" `
+            -WebServerUser "$(webServerUser)" `
+            -WebServerPassword "$(webServerPassword)" `
+            -Source $source `
+            -Dest $dest
+      displayName: 'Copy files to remote web server (PowerShell Script)'
