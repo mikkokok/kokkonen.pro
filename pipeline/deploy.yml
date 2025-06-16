@@ -32,8 +32,11 @@ stages:
         customCommand: 'run build'
         workingDir: '$(Build.SourcesDirectory)/app'
 
-    - publish: 'dist'
-      artifact: $(artifactName)
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish React App'
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/app/dist'
+        ArtifactName: '$(artifactName)'
 
 - stage: Deploy
   displayName: 'Deploy to local'
