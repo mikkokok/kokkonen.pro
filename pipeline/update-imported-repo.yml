@@ -30,7 +30,7 @@ steps:
 
     for branch in $(git branch -r | grep 'upstream/' | grep -v 'HEAD' | sed 's/upstream\///'); do
       echo "Updating branch: $branch"
-      git checkout $branch || git checkout -b $branch origin/$branch
+      git checkout $branch -- || git checkout -b $branch origin/$branch --
       git merge upstream/$branch --allow-unrelated-histories --no-edit
       git push origin $branch
     done
