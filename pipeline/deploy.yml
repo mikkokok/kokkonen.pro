@@ -24,7 +24,7 @@ stages:
       inputs:
         workingDir: '$(Build.SourcesDirectory)/app'
         verbose: true
-        
+
     - task: Npm@1
       displayName: 'npm install'
       inputs:
@@ -32,7 +32,7 @@ stages:
         customCommand: 'run build'
         workingDir: '$(Build.SourcesDirectory)/app'
 
-    - publish: 'build'
+    - publish: 'dist'
       artifact: $(artifactName)
 
 - stage: Deploy
