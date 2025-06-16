@@ -15,16 +15,22 @@ stages:
     - checkout: self
 
     - task: NodeTool@0
-      inputs:
-        versionSpec: '18.x'
       displayName: 'Install Node.js'
-
+      inputs:
+        versionSpec: '20.x'
+    
     - task: Npm@1
+      displayName: 'npm install dependencies'
+      inputs:
+        workingDir: '$(Build.SourcesDirectory)/app'
+        verbose: true
+        
+    - task: Npm@1
+      displayName: 'npm install'
       inputs:
         command: 'custom'
         customCommand: 'run build'
         workingDir: '$(Build.SourcesDirectory)/app'
-      displayName: 'npm install'
 
     - publish: 'build'
       artifact: $(artifactName)
