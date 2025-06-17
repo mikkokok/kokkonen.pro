@@ -1,0 +1,67 @@
+trigger:
+- main
+
+variables:
+  artifactName: 'react-app'
+
+stages:
+- stage: Build
+  displayName: 'Build React App'
+  jobs:
+  - job: Build
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - checkout: self
+
+    - task: NodeTool@0
+      displayName: 'Install Node.js'
+      inputs:
+        versionSpec: '20.x'
+    
+    - task: Npm@1
+      displayName: 'npm install dependencies'
+      inputs:
+        workingDir: '$(Build.SourcesDirectory)/app'
+        verbose: true
+
+    - task: Npm@1
+      displayName: 'npm install'
+      inputs:
+        command: 'custom'
+        customCommand: 'run build'
+        workingDir: '$(Build.SourcesDirectory)/app'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish React App'
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/app/dist'
+        ArtifactName: '$(artifactName)'
+
+- stage: Deploy
+  displayName: 'Deploy to local'
+  dependsOn: Build
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy on Local Ubuntu Agent'
+    pool:
+      name: 'local'
+    steps:
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: '$(artifactName)'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'mikkokok'
+        KeyVaultName: 'kv-kokkonenpro'
+        SecretsFilter: '*'
+        RunAsPreJob: true
+        
+    - script: |
+        chmod +x ./pipeline/deploy.sh
+        ./pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
+      displayName: 'Copy files to remote Windows server using deploy.sh'
