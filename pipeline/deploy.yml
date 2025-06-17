@@ -53,19 +53,14 @@ stages:
         downloadType: 'single'
         artifactName: '$(artifactName)'
         downloadPath: '$(System.ArtifactsDirectory)'
+
     - task: AzureKeyVault@2
       inputs:
         azureSubscription: 'mikkokok'
         KeyVaultName: 'kv-kokkonenpro'
         SecretsFilter: '*'
         RunAsPreJob: true
-    - pwsh: |
-        $source = "$(System.ArtifactsDirectory)\$(artifactName)\*"
-        $dest = "C:\inetpub\wwwroot\kokkonen.pro"
-        .\pipeline\deploy.ps1 `
-            -WebServerIp "$(webServerIp)" `
-            -WebServerUser "$(webServerUser)" `
-            -WebServerPassword "$(webServerPassword)" `
-            -Source $source `
-            -Dest $dest
-      displayName: 'Copy files to remote web server (PowerShell Script)'
+        
+    - script: |
+        ./pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
+      displayName: 'Copy files to remote Windows server using deploy.sh'
