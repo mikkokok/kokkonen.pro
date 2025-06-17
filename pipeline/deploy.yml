@@ -62,5 +62,6 @@ stages:
         RunAsPreJob: true
         
     - script: |
+        chmod +x ./pipeline/deploy.sh
         ./pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
       displayName: 'Copy files to remote Windows server using deploy.sh'
