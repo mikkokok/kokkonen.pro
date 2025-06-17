@@ -1,7 +1,7 @@
 import {HubConnection, HubConnectionBuilder, LogLevel} from '@microsoft/signalr';
 import {useEffect, useRef, useState} from 'react';
 import {apiScopes, electricityUrl} from '../config/config';
-import {ConsumptionData, consumptionDataSchema, translateKey, validConsumptionKeys} from '../types/electricity/consumptionData';
+import {ConsumptionData, consumptionDataSchema, translateKey, translateUnit, validConsumptionKeys} from '../types/electricity/consumptionData';
 import {useAccount, useMsal} from '@azure/msal-react';
 import {useNavigate} from 'react-router-dom';
 
@@ -75,7 +75,7 @@ function Electricity() {
       {latestConsumptionData &&
         validConsumptionKeys.map((key) => (
           <div key={key}>
-            {translateKey(key)}: {latestConsumptionData.data[key]}
+            {translateKey(key)}: {latestConsumptionData.data[key]} {translateUnit(key)}
           </div>
         ))}
     </div>

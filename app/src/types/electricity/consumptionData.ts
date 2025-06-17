@@ -57,3 +57,24 @@ export function translateKey(key: ConsumptionKeys) {
       return 'Cumulative power yield';
   }
 }
+
+export function translateUnit(key: ConsumptionKeys) {
+  switch (key) {
+    case 'ActualConsumption':
+    case 'ActualReturndelivery':
+    case 'L1InstantPowerUsage':
+    case 'L2InstantPowerUsage':
+    case 'L3InstantPowerUsage':
+    case 'CumulativePowerConsumption':
+    case 'CumulativePowerYield':
+      return 'Wh';
+    case 'L1InstantPowerCurrent':
+    case 'L2InstantPowerCurrent':
+    case 'L3InstantPowerCurrent':
+      return 'A';
+    case 'L1Voltage':
+    case 'L2Voltage':
+    case 'L3Voltage':
+      return 'V';
+  }
+}
