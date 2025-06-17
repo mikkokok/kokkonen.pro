@@ -15,4 +15,4 @@ sshpass -p "$WIN_PASS" ssh -o StrictHostKeyChecking=no "$WIN_USER@$WIN_HOST" \
 
 echo "Copying new files to $DEST_PATH on $WIN_HOST"
 # Copy new files to the Windows server
-sshpass -p "$WIN_PASS" scp -r -o StrictHostKeyChecking=no $ARTIFACT_PATH "$WIN_USER@$WIN_HOST:/$(echo $DEST_PATH | sed 's|:|/|')/"
+sshpass -p "$WIN_PASS" scp -r -o StrictHostKeyChecking=no $ARTIFACT_PATH "$WIN_USER@$WIN_HOST:\"$DEST_PATH/\""
