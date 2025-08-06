@@ -59,7 +59,7 @@ function Electricity() {
           setConnectionStatus(`Connected to ${electricityUrl}`);
         } catch (error) {
           console.log('hubConnection failed', error);
-          setConnectionStatus(`Connection failed to ${electricityUrl}`);
+          setConnectionStatus(`Connection failed to ${electricityUrl}, due to ${error}`);
         }
       };
       void startHubConn();
@@ -72,12 +72,15 @@ function Electricity() {
       <h2>Electricity consumption</h2>
       <div>{connectionStatus}</div>
       <div>Updated: {latestConsumptionData?.timestamp}</div>
-      {latestConsumptionData &&
-        validConsumptionKeys.map((key) => (
-          <div key={key}>
-            {translateKey(key)}: {latestConsumptionData.data[key]} {translateUnit(key)}
-          </div>
-        ))}
+      {latestConsumptionData && (
+        <ul style={{textAlign: 'left', listStyleType: 'none'}}>
+          {validConsumptionKeys.map((key) => (
+            <li key={key}>
+              - {translateKey(key)}: {latestConsumptionData.data[key]} {translateUnit(key)}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
