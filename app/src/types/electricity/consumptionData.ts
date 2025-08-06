@@ -65,6 +65,7 @@ export function translateUnit(key: ConsumptionKeys) {
     case 'L1InstantPowerUsage':
     case 'L2InstantPowerUsage':
     case 'L3InstantPowerUsage':
+      return 'W';
     case 'CumulativePowerConsumption':
     case 'CumulativePowerYield':
       return 'Wh';
