@@ -1,11 +1,10 @@
-import {useAccount, useIsAuthenticated, useMsal} from '@azure/msal-react';
+import {useIsAuthenticated, useMsal} from '@azure/msal-react';
 import {loginRequest} from '../lib/auth/msal';
 import Button from '@mui/material/Button';
 
 function Login() {
   const {instance} = useMsal();
   const isAuthenticated = useIsAuthenticated();
-  const account = useAccount();
 
   const handleLogin = async () => {
     try {
