@@ -19,7 +19,7 @@ function Electricity() {
     if (!currentConnection) {
       if (!account) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        navigate('/');
+        navigate('/login', {replace: true});
         return;
       }
       setConnectionStatus(`Connecting to ${electricityUrl}`);
