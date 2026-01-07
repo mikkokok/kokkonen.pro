@@ -1,4 +1,3 @@
-import {Button} from '@mui/material';
 import {Link} from 'react-router-dom';
 
 const NavItem: React.FC<{
@@ -11,11 +10,12 @@ const NavItem: React.FC<{
     return null;
   }
   return (
-    <div>
-      <Button fullWidth variant="contained" startIcon={startIcon} component={Link} to={route}>
+    <Link to={route} className="w-full">
+      <button className="hover:text-white cursor-pointer rounded hover:bg-gray-800 transition">
+        {startIcon}
         {routeName}
-      </Button>
-    </div>
+      </button>
+    </Link>
   );
 };
 

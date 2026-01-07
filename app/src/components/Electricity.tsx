@@ -68,7 +68,7 @@ function Electricity() {
   }, [latestConsumptionData, connectionStatus, account, instance, navigate]);
 
   return (
-    <div>
+    <div className="electricity-container" style={{marginTop: '20px', width: '100%'}}>
       <h2>Electricity consumption</h2>
       <div>{connectionStatus}</div>
       <div>Updated: {latestConsumptionData?.timestamp}</div>

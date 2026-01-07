@@ -3,10 +3,12 @@ import react from '@vitejs/plugin-react';
 import {viteStaticCopy} from 'vite-plugin-static-copy';
 import {normalizePath} from 'vite';
 import path from 'node:path';
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     viteStaticCopy({
       targets: [
         {

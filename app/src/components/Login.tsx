@@ -1,6 +1,5 @@
 import {useIsAuthenticated, useMsal} from '@azure/msal-react';
 import {loginRequest} from '../lib/auth/msal';
-import Button from '@mui/material/Button';
 
 function Login() {
   const {instance} = useMsal();
@@ -25,20 +24,20 @@ function Login() {
   };
 
   return (
-    <div className="login-container">
+    <div className="login-container" style={{marginTop: '20px', width: '100%'}}>
       {isAuthenticated ? (
         <div>
           <p>You are logged in</p>
-          <Button variant="contained" onClick={handleLogout}>
+          <button className="hover:text-white cursor-pointer p-2 rounded hover:bg-gray-800 transition" onClick={handleLogout}>
             Logout
-          </Button>
+          </button>
         </div>
       ) : (
         <div>
           <p>Please log in to access the application.</p>
-          <Button variant="contained" onClick={handleLogin}>
+          <button className="hover:text-white cursor-pointer p-2 rounded hover:bg-gray-800 transition" onClick={handleLogin}>
             Login
-          </Button>
+          </button>
         </div>
       )}
     </div>
