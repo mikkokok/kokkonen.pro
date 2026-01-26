@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "pipeline",
+			"name": "pipeline"
+		},
+		{
+			"path": "app",
+			"name": "app"
+		}
+	],
+	"settings": {}
+}
+
+
+

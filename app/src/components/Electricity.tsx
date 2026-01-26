@@ -72,11 +72,19 @@ function Electricity() {
       <h2>Electricity consumption</h2>
       <div>{connectionStatus}</div>
       <div>Updated: {latestConsumptionData?.timestamp}</div>
-      {latestConsumptionData && (
+      {latestConsumptionData ? (
         <ul style={{textAlign: 'left', listStyleType: 'none'}}>
           {validConsumptionKeys.map((key) => (
             <li key={key}>
               - {translateKey(key)}: {latestConsumptionData.data[key]} {translateUnit(key)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul style={{textAlign: 'left', listStyleType: 'none'}}>
+          {validConsumptionKeys.map((key) => (
+            <li key={key}>
+              - {translateKey(key)}: N/A
             </li>
           ))}
         </ul>

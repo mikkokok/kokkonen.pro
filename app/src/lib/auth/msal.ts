@@ -1,4 +1,4 @@
-import {Configuration, LogLevel, PopupRequest, PublicClientApplication} from '@azure/msal-browser';
+import {AuthenticationResult, Configuration, LogLevel, PopupRequest, PublicClientApplication, SilentRequest} from '@azure/msal-browser';
 import {apiScopes, clientId, msalAuthority} from '../../config/config';
 
 export const msalConfig: Configuration = {
@@ -46,4 +46,22 @@ export const loginRequest: PopupRequest = {
 
 export const graphConfig = {
   graphMeEndpoint: 'https://graph.microsoft.com/v1.0/me',
+};
+
+export async function getAuthResponse() {
+  const silentRequest: SilentRequest = {
+    scopes: apiScopes,
+  };
+  const msalInstance = getMsalInstance();
+  let response: AuthenticationResult | undefined;
+  try {
+    response = await msalInstance.acquireTokenSilent(silentRequest);
+  } catch (error) {
+    msalInstance.setActiveAccount(null);
+    throw error;
+  }
+  if (!response) {
+    throw new Error('No active account found for authentication.');
+  }
+  return response;
 };
