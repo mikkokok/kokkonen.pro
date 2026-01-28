@@ -36,9 +36,6 @@ export const msalConfig: Configuration = {
   },
 };
 
-export function getMsalInstance(): PublicClientApplication {
-  return new PublicClientApplication(msalConfig);
-}
 
 export const loginRequest: PopupRequest = {
   scopes: apiScopes,
@@ -47,6 +44,15 @@ export const loginRequest: PopupRequest = {
 export const graphConfig = {
   graphMeEndpoint: 'https://graph.microsoft.com/v1.0/me',
 };
+
+let msalInstance: PublicClientApplication | null = null;
+
+export function getMsalInstance(): PublicClientApplication {
+  if (!msalInstance) {
+    msalInstance = new PublicClientApplication(msalConfig);
+  }
+  return msalInstance;
+}
 
 export async function getAuthResponse() {
   const silentRequest: SilentRequest = {
@@ -58,6 +64,7 @@ export async function getAuthResponse() {
     response = await msalInstance.acquireTokenSilent(silentRequest);
   } catch (error) {
     msalInstance.setActiveAccount(null);
+    console.log('Silent token acquisition failed', error);
     throw error;
   }
   if (!response) {

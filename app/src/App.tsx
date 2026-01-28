@@ -1,11 +1,11 @@
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './components/Home';
-import { HomeHeating } from './components/HomeHeating';
-import Electricity from './components/Electricity';
+import {HomeHeating} from './components/HomeHeating';
 import NavigationBar from './components/NavigationBar';
-import { Route, Routes } from 'react-router-dom';
+import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
+import ElectricityConsumption from './components/ElectricityConsumption';
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/electricity" element={<Electricity />} />
+            <Route path="/electricityconsumption" element={<ElectricityConsumption />} />
             <Route path="/home-heating" element={<HomeHeating />} />
             <Route path="*" element={<Home />} />
           </Routes>

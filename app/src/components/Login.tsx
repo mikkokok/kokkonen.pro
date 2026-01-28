@@ -1,9 +1,10 @@
 import {useIsAuthenticated, useMsal} from '@azure/msal-react';
-import {loginRequest} from '../lib/auth/msal';
-import { Button } from "@/components/ui/button"
+import {getMsalInstance, loginRequest} from '../lib/auth/msal';
+import {Button} from "./ui/button"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
 
 function Login() {
-  const {instance} = useMsal();
+  const instance = getMsalInstance();
   const isAuthenticated = useIsAuthenticated();
 
   const handleLogin = async () => {
@@ -25,22 +26,34 @@ function Login() {
   };
 
   return (
-    <div className="login-container mt-5, w-full">
-      {isAuthenticated ? (
-        <div>
-          <p>You are logged in</p>
-          <Button variant='outline' onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      ) : (
-        <div>
-          <p>Please log in to access the application.</p>
-          <Button  onClick={handleLogin}>
-            Login
-          </Button>
-        </div>
-      )}
+    <div className="flex items-center p-6 dark">
+      <Card className="w-full max-w-md">
+        {isAuthenticated ? (
+          <>
+            <CardHeader>
+              <CardTitle>Logged In</CardTitle>
+              <CardDescription>You are currently authenticated</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Button onClick={handleLogout}>
+                Logout
+              </Button>
+            </CardContent>
+          </>
+        ) : (
+          <>
+            <CardHeader>
+              <CardTitle>Welcome</CardTitle>
+              <CardDescription>Please log in to access the application</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Button onClick={handleLogin}>
+                Login
+              </Button>
+            </CardContent>
+          </>
+        )}
+      </Card>
     </div>
   );
 }

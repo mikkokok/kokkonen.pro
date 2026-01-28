@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
-import { useAccount } from '@azure/msal-react';
+import {cn} from '../lib/utils';
+import {useAccount} from '@azure/msal-react';
 
 function Header() {
   const account = useAccount();
@@ -8,11 +8,11 @@ function Header() {
       "bg-gray-900 text-white p-4 border-b border-gray-800",
       "flex justify-between items-center h-16"
     )}>
-      <div><h1 className="text-xl font-bold text-blue-400">Kokkonen.pro</h1></div>
+      <div><h1 className="text-xl font-bold ">Kokkonen.pro</h1></div>
       <div>Home dashboard</div>
 
       <div className="flex gap-4">
-        <p className="hover:text-blue-400 transition-colors">{account && <p>Hello {account.name} ({account.username}) </p>}</p>
+        <p className="hover:text-orange-400 transition-colors">{account && `Hello ${account.name} (${account.username})`}</p>
 
       </div>
     </header>

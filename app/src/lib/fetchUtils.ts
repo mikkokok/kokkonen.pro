@@ -20,3 +20,10 @@ export async function handleFetchErrors(response: Response): Promise<void> {
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 }
+
+export async function handleFetch(request: Request): Promise<Response> {
+    await patchAuthHeaders(request);
+    const response = await fetch(request);
+    await handleFetchErrors(response);
+    return response;
+}

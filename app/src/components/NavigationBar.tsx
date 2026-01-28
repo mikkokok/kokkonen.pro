@@ -1,14 +1,14 @@
-import { cn } from '@/lib/utils';
+import {cn} from '../lib/utils';
 import NavItem from './NavItem';
-import { useIsAuthenticated } from '@azure/msal-react';
-import { useLocation } from 'react-router-dom';
-import { Home08Icon, Login02Icon, TemperatureIcon, ElectricHome01Icon } from '@hugeicons/core-free-icons';
+import {useIsAuthenticated} from '@azure/msal-react';
+import {useLocation} from 'react-router-dom';
+import {Home08Icon, Login02Icon, TemperatureIcon, ElectricHome01Icon} from '@hugeicons/core-free-icons';
 
 const navItems = [
-  { text: 'Home', path: '/', hidden: true, icon: Home08Icon },
-  { text: 'Login', path: '/login', hidden: false, icon: Login02Icon },
-  { text: 'Home heating', path: '/home-heating', hidden: true, icon: TemperatureIcon },
-  { text: 'Electricity', path: '/electricity', hidden: true, icon: ElectricHome01Icon },
+  {text: 'Home', path: '/', hidden: true, icon: Home08Icon},
+  {text: 'Login', path: '/login', hidden: false, icon: Login02Icon},
+  {text: 'Home heating', path: '/home-heating', hidden: true, icon: TemperatureIcon},
+  {text: 'Electricity consumption', path: '/electricityconsumption', hidden: true, icon: ElectricHome01Icon},
 ];
 
 function NavigationBar() {
@@ -18,8 +18,8 @@ function NavigationBar() {
   return (
     <div>
       <aside className={cn(
-        "w-64 bg-gray-900 text-gray-300",
-        "border-r border-gray-800 flex flex-col pl-2"
+        "w-64 bg-gray-900",
+        "border-r border-gray-800 flex flex-col pl-2 dark"
       )}>
         <nav className="flex-1 p-4">
           <ul className="space-y-4">
