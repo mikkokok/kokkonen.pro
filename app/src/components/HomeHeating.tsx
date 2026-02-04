@@ -1,21 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  AlertCircleIcon, 
-  CheckmarkCircle02Icon, 
-  FireIcon, 
+import {useEffect, useState} from 'react';
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
+import {Button} from './ui/button';
+import {Input} from './ui/input';
+import {Label} from './ui/label';
+import {Badge} from './ui/badge';
+import {Separator} from './ui/separator';
+import {
+  AlertCircleIcon,
+  CheckmarkCircle02Icon,
+  FireIcon,
   TemperatureIcon,
   DropletIcon,
   Lightning,
   BatteryFullIcon,
 } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { heatHarmonyUrl } from '@/config/config';
+import {HugeiconsIcon} from '@hugeicons/react';
+import {backendUrl} from '../config/config';
+import {HeatHarmonyClient} from '../lib/heatHarmony/heatHarmonyClient';
 
 interface TemperatureOverride {
   temperature: number;
@@ -40,28 +41,31 @@ export function HomeHeating() {
   const [automationStatus, setAutomationStatus] = useState<any>(null);
   const [overrideStatus, setOverrideStatus] = useState<any>(null);
   const [emOverrideStatus, setEmOverrideStatus] = useState<any>(null);
+  const heatHarmonyUrl = `${backendUrl}`;
+  const heatHarmonyClient = new HeatHarmonyClient(backendUrl);
 
   const fetchData = async () => {
     try {
-      const [ouman, heisha, em, oil, trv, automation, override, emOverride] = await Promise.all([
-        fetch(`${heatHarmonyUrl}ouman/latest`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}heishamon/latest`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}em/latest`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}oilburner/latest`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}trv/latest`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}heatautomation/status`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}heatautomation/override`).then(r => r.json()),
-        fetch(`${heatHarmonyUrl}em/override/status`).then(r => r.json()),
-      ]);
+      // const [ouman, heisha, em, oil, trv, override, emOverride] = await Promise.all([
+      //   fetch(`${heatHarmonyUrl}ouman/latest`).then(r => r.json()),
+      //   fetch(`${heatHarmonyUrl}heishamon/latest`).then(r => r.json()),
+      //   fetch(`${heatHarmonyUrl}em/latest`).then(r => r.json()),
+      //   fetch(`${heatHarmonyUrl}oilburner/latest`).then(r => r.json()),
+      //   fetch(`${heatHarmonyUrl}trv/latest`).then(r => r.json()),
+      //   fetch(`${heatHarmonyUrl}heatautomation/override`).then(r => r.json()),
+      //   fetch(`${heatHarmonyUrl}em/override/status`).then(r => r.json()),
+      // ]);
 
-      setOumanData(ouman);
-      setHeishaData(heisha);
-      setEmData(em);
-      setOilBurnerData(oil);
-      setTrvData(trv);
+      const automation = await heatHarmonyClient.getHeatAutomationStatus();
+
+      // setOumanData(ouman);
+      // setHeishaData(heisha);
+      // setEmData(em);
+      // setOilBurnerData(oil);
+      // setTrvData(trv);
       setAutomationStatus(automation);
-      setOverrideStatus(override);
-      setEmOverrideStatus(emOverride);
+      // setOverrideStatus(override);
+      // setEmOverrideStatus(emOverride);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -85,7 +89,7 @@ export function HomeHeating() {
 
       const response = await fetch(`${heatHarmonyUrl}heatautomation/override`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
       });
 
@@ -180,7 +184,7 @@ export function HomeHeating() {
           </Badge>
         ) : (
           <Badge variant="destructive" className="gap-1">
-            <HugeiconsIcon icon={AlertCircleIcon}  className="h-3 w-3" />
+            <HugeiconsIcon icon={AlertCircleIcon} className="h-3 w-3" />
             Automation Stopped
           </Badge>
         )}
@@ -191,7 +195,7 @@ export function HomeHeating() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Outside Temp</CardTitle>
-            <HugeiconsIcon icon={TemperatureIcon}  className="h-4 w-4 text-muted-foreground" />
+            <HugeiconsIcon icon={TemperatureIcon} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{oumanData?.outsideTemp?.toFixed(1)}°C</div>
@@ -269,7 +273,7 @@ export function HomeHeating() {
                 id="temp"
                 type="number"
                 value={overrideTemp}
-                onChange={(e: { target: { value: any; }; }) => setOverrideTemp(Number(e.target.value))}
+                onChange={(e: {target: {value: any;};}) => setOverrideTemp(Number(e.target.value))}
                 min={15}
                 max={25}
                 step={0.5}
@@ -281,7 +285,7 @@ export function HomeHeating() {
                 id="hours"
                 type="number"
                 value={overrideHours}
-                onChange={(e: { target: { value: any; }; }) => setOverrideHours(Number(e.target.value))}
+                onChange={(e: {target: {value: any;};}) => setOverrideHours(Number(e.target.value))}
                 min={1}
                 max={24}
               />
@@ -292,7 +296,7 @@ export function HomeHeating() {
                 id="delay"
                 type="number"
                 value={overrideDelay}
-                onChange={(e: { target: { value: any; }; }) => setOverrideDelay(Number(e.target.value))}
+                onChange={(e: {target: {value: any;};}) => setOverrideDelay(Number(e.target.value))}
                 min={0}
                 max={12}
               />
@@ -370,7 +374,7 @@ export function HomeHeating() {
                 id="emHours"
                 type="number"
                 value={emHours}
-                onChange={(e: { target: { value: any; }; }) => setEmHours(Number(e.target.value))}
+                onChange={(e: {target: {value: any;};}) => setEmHours(Number(e.target.value))}
                 min={1}
                 max={24}
               />

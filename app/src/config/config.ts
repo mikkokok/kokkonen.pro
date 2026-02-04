@@ -3,5 +3,3 @@ export const msalAuthority = 'https://login.microsoftonline.com/8a22e557-6496-40
 export const apiScopes = ['api://3ab92a24-c083-4e86-a785-fd23e14ad82e/all.api openid profile offline_access', 'User.Read'];
 export const backendUrl = 'https://be.kokkonen.pro:443/';
 export const electricityUrl = 'https://be.kokkonen.pro:443/api/electricity/consumption';
-export const heatHarmonyUrl = 'https://be.kokkonen.pro:443/api/heatharmony/';
-// export const heatHarmonyUrl = 'https://localhost:7054/api/heatharmony/';

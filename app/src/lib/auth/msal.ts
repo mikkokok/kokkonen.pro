@@ -5,6 +5,7 @@ export const msalConfig: Configuration = {
   auth: {
     clientId,
     authority: msalAuthority,
+    redirectUri: window.location.origin,
   },
   cache: {
     cacheLocation: 'localStorage',
@@ -45,11 +46,19 @@ export const graphConfig = {
   graphMeEndpoint: 'https://graph.microsoft.com/v1.0/me',
 };
 
-let msalInstance: PublicClientApplication | null = null;
+async function initMsalInstance(): Promise<PublicClientApplication> {
+  const client = new PublicClientApplication(msalConfig);
+  await client.initialize();
+  return client;
+}
 
-export function getMsalInstance(): PublicClientApplication {
+
+let msalInstance: Promise<PublicClientApplication> | null = null;
+
+export async function getMsalInstance(): Promise<PublicClientApplication> {
   if (!msalInstance) {
-    msalInstance = new PublicClientApplication(msalConfig);
+    msalInstance = initMsalInstance();
+
   }
   return msalInstance;
 }
@@ -58,10 +67,14 @@ export async function getAuthResponse() {
   const silentRequest: SilentRequest = {
     scopes: apiScopes,
   };
-  const msalInstance = getMsalInstance();
+  const msalInstance = await getMsalInstance();
   let response: AuthenticationResult | undefined;
   try {
     response = await msalInstance.acquireTokenSilent(silentRequest);
+    if (!msalInstance.getActiveAccount()) {
+      msalInstance.setActiveAccount(response.account);
+    }
+    msalInstance.setActiveAccount(response.account);
   } catch (error) {
     msalInstance.setActiveAccount(null);
     console.log('Silent token acquisition failed', error);
