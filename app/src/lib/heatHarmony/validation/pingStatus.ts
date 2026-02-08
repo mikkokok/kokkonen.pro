@@ -1,8 +1,9 @@
-import { z } from 'zod';
+import {z} from 'zod';
+import {isoLocalOrOffsetDateTimeSchema} from './dateTime';
 
 export const PingResponseSchema = z.object({
   status: z.string().nullable(),
-  serverTime: z.string().datetime().optional(),
+  serverTime: isoLocalOrOffsetDateTimeSchema.optional(),
 });
 
 export type PingResponse = z.infer<typeof PingResponseSchema>;

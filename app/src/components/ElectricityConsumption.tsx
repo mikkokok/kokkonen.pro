@@ -1,14 +1,23 @@
 import {HubConnection} from '@microsoft/signalr';
 import {useEffect, useRef, useState} from 'react';
-import {backendUrl, electricityUrl} from '../config/config';
-import {ConsumptionData, consumptionDataSchema, ConsumptionKeys, translateKey, translateUnit, validConsumptionKeys} from '../lib/electricity/validation/consumptionData';
+import {backendUrl} from '../config/config';
+import {
+  ConsumptionData,
+  consumptionDataSchema,
+  ConsumptionKeys,
+  translateKey,
+  translateUnit,
+  validConsumptionKeys
+} from '../lib/electricity/validation/consumptionData';
 import {useIsAuthenticated} from '@azure/msal-react';
 import {useNavigate} from 'react-router-dom';
 import {ElectricityClient} from '../lib/electricity/electricityClient';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
 import {Badge} from './ui/badge';
+import {Checkbox} from './ui/checkbox';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 import {useAuth} from '../contexts/AuthContext';
+import {convertMQStatusEnumToString} from '../lib/electricity/validation/mqResponse';
 
 const cumulativePowerConsumption: ConsumptionKeys[] = ['CumulativePowerConsumption'];
 const cumulativePowerYield: ConsumptionKeys[] = ['CumulativePowerYield'];
@@ -25,35 +34,36 @@ function ElectricityConsumption() {
   const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected');
   const [latestConsumptionData, setLatestConsumptionData] = useState<ConsumptionData | null>(null);
   const [historyData, setHistoryData] = useState<ConsumptionData[] | null>(null);
+
+  const [mqStatus, setMqStatus] = useState<string | null>(null);
+  const [mqStatusUpdatedAt, setMqStatusUpdatedAt] = useState<string | null>(null);
+
+  const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(
+    Object.fromEntries(validConsumptionKeys.map(key => [key, true]))
+  );
+
   const isAuthenticated = useIsAuthenticated();
   const {isReady} = useAuth();
   const navigate = useNavigate();
   const eClientRef = useRef<ElectricityClient | null>(null);
 
   useEffect(() => {
-    if (!isReady) {
-      return;
-    }
-
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
-
+    if (!isReady) {
+      return;
+    }
     if (!eClientRef.current) {
       eClientRef.current = new ElectricityClient(backendUrl);
     }
-  }, [isReady, isAuthenticated, navigate]);
-
-  useEffect(() => {
-    if (!isReady || !isAuthenticated || !eClientRef.current) {
-      return;
-    }
 
     const currentConnection = connection.current;
+    const connectionUrl = `${backendUrl}api/electricity/consumption`;
 
     if (!currentConnection) {
-      setConnectionStatus(`Connecting to ${electricityUrl}`);
+      setConnectionStatus(`Connecting to ${connectionUrl}`);
 
       const setupConnection = async () => {
         try {
@@ -71,11 +81,11 @@ function ElectricityConsumption() {
 
           await hubConnection.start();
           console.log('hubConnection started');
-          setConnectionStatus(`Connected to ${hubConnection.baseUrl}`);
+          setConnectionStatus(`Connected to ${connectionUrl}`);
           connection.current = hubConnection;
         } catch (error) {
           console.log('hubConnection failed', error);
-          setConnectionStatus(`Connection failed to ${electricityUrl}, due to ${error}`);
+          setConnectionStatus(`Connection failed to ${connectionUrl}, due to ${error}`);
         }
       };
 
@@ -87,6 +97,32 @@ function ElectricityConsumption() {
         void currentConnection.stop();
       }
     };
+  }, [isReady, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (!isReady || !isAuthenticated || !eClientRef.current) {
+      return;
+    }
+
+    const fetchMqStatus = async () => {
+      try {
+        const status = await eClientRef.current!.getMQStatus();
+        setMqStatus(convertMQStatusEnumToString(status));
+        setMqStatusUpdatedAt(new Date().toLocaleString('fi-FI'));
+      } catch (error) {
+        console.log('Failed to fetch MQ status', error);
+        setMqStatus(null);
+        setMqStatusUpdatedAt(new Date().toLocaleString('fi-FI'));
+      }
+    };
+
+    void fetchMqStatus();
+
+    const intervalId = setInterval(() => {
+      void fetchMqStatus();
+    }, 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, [isReady, isAuthenticated]);
 
   useEffect(() => {
@@ -123,6 +159,13 @@ function ElectricityConsumption() {
   const getStatusVariant = () => {
     if (connectionStatus.includes('Connected')) return 'default';
     if (connectionStatus.includes('Connecting')) return 'secondary';
+    return 'destructive';
+  };
+
+  const getMqStatusVariant = () => {
+    const s = mqStatus === null ? '' : String(mqStatus).toLowerCase();
+    if (!s) return 'secondary';
+    if (s.includes('ok') || s.includes('healthy') || s.includes('connected') || s.includes('running') || s.includes('up')) return 'default';
     return 'destructive';
   };
 
@@ -186,7 +229,14 @@ function ElectricityConsumption() {
     };
   };
 
-  const renderChart = (title: string, description: string, keys: ConsumptionKeys[]) => {
+  const toggleLine = (key: ConsumptionKeys) => {
+    setVisibleLines(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const renderChart = (title: string, description: string, keys: ConsumptionKeys[], showToggles = false) => {
     const formatter = getChartFormatter(keys);
 
     return (
@@ -196,6 +246,25 @@ function ElectricityConsumption() {
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
+          {showToggles && (
+            <div className="mb-4 flex flex-wrap gap-4">
+              {keys.map((key) => (
+                <div key={key} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`toggle-${key}`}
+                    checked={visibleLines[key]}
+                    onCheckedChange={() => toggleLine(key)}
+                  />
+                  <label
+                    htmlFor={`toggle-${key}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {translateKey(key)}
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
@@ -225,21 +294,19 @@ function ElectricityConsumption() {
                     value !== undefined ? formatter.tooltipFormatter(value) : 'N/A'
                   }
                 />
-                <Legend
-                  wrapperStyle={{
-                    paddingTop: '20px'
-                  }}
-                />
+                <Legend wrapperStyle={{paddingTop: '20px'}} />
                 {keys.map((key, index) => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={translateKey(key)}
-                    stroke={colors[index % colors.length]}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{r: 4}}
-                  />
+                  visibleLines[key] && (
+                    <Line
+                      key={key}
+                      type="monotone"
+                      dataKey={translateKey(key)}
+                      stroke={colors[index % colors.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{r: 4}}
+                    />
+                  )
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -255,9 +322,17 @@ function ElectricityConsumption() {
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto dark">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Electricity Consumption</h1>
-        <Badge variant={getStatusVariant()} className="text-sm">
-          {connectionStatus}
-        </Badge>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={getStatusVariant()} className="text-sm">
+            {connectionStatus}
+          </Badge>
+
+          <Badge variant={getMqStatusVariant()} className="text-sm">
+            MQ: {mqStatus === null ? 'Unknown' : String(mqStatus)}
+            {mqStatusUpdatedAt ? ` (updated ${mqStatusUpdatedAt})` : ''}
+          </Badge>
+        </div>
       </div>
 
       <Card>
@@ -303,7 +378,8 @@ function ElectricityConsumption() {
       {renderChart(
         'Power Details',
         `Detailed power usage, current, and voltage per phase (${historyData?.length || 0} data points)`,
-        otherKeys
+        otherKeys,
+        true
       )}
       {renderChart(
         'Voltage Details',

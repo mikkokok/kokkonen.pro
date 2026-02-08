@@ -5,8 +5,8 @@ import {HomeHeating} from './components/HomeHeating';
 import NavigationBar from './components/NavigationBar';
 import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
-import ElectricityConsumption from './components/ElectricityConsumption';
 import {AuthProvider} from './contexts/AuthContext';
+import Electricity from './components/Electricity';
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/electricityconsumption" element={<ElectricityConsumption />} />
+              <Route path="/electricity" element={<Electricity />} />
               <Route path="/home-heating" element={<HomeHeating />} />
               <Route path="*" element={<Home />} />
             </Routes>

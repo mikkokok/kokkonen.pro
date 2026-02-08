@@ -2,11 +2,27 @@ import {Link} from "react-router-dom";
 import {getMsalInstance} from "../lib/auth/msal";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./ui/card";
 import {Button} from "./ui/button";
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {PublicClientApplication} from "@azure/msal-browser";
+import {backendUrl} from "../config/config";
+import {HeatHarmonyClient} from "../lib/heatHarmony/heatHarmonyClient";
+import {OumanLatestResponse} from "../lib/heatHarmony/validation/oumanLatestResponse";
+import {DropletIcon, TemperatureIcon} from "@hugeicons/core-free-icons";
+import {HugeiconsIcon} from '@hugeicons/react';
 
 function Home() {
   const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
+  const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
+  const [oumanLatest, setOumanLatest] = useState<OumanLatestResponse | undefined>(undefined);
+
+  const fetchData = async () => {
+    try {
+      const oumanLatestData = await heatHarmonyClient.getOumanLatestData();
+      setOumanLatest(oumanLatestData);
+    } catch (error) {
+      console.error("Error fetching latest data:", error);
+    }
+  }
 
   useEffect(() => {
     const initMsal = async () => {
@@ -14,6 +30,12 @@ function Home() {
       setMsalInstance(instance);
     };
     void initMsal();
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 60000); // Refresh every 60s
+    return () => clearInterval(interval);
   }, []);
 
   // Use msalInstance only after it's initialized
@@ -53,12 +75,24 @@ function Home() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Quick Stats</CardTitle>
-            <CardDescription>Overview of your home</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Outside Temp</CardTitle>
+            <HugeiconsIcon icon={TemperatureIcon} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Coming soon...</p>
+            <div className="text-2xl font-bold">{oumanLatest?.outsideTemp?.toFixed(1)}°C</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inside Temp</CardTitle>
+            <HugeiconsIcon icon={TemperatureIcon} className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{oumanLatest?.insideTemp?.toFixed(1)}°C</div>
+            <p className="text-xs text-muted-foreground">
+              Target: {oumanLatest?.insideTempDemand?.toFixed(1)}°C
+            </p>
           </CardContent>
         </Card>
       </div>

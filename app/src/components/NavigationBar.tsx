@@ -8,7 +8,7 @@ const navItems = [
   {text: 'Home', path: '/', hidden: true, icon: Home08Icon},
   {text: 'Login', path: '/login', hidden: false, icon: Login02Icon},
   {text: 'Home heating', path: '/home-heating', hidden: true, icon: TemperatureIcon},
-  {text: 'Electricity consumption', path: '/electricityconsumption', hidden: true, icon: ElectricHome01Icon},
+  {text: 'Electricity', path: '/electricity', hidden: true, icon: ElectricHome01Icon},
 ];
 
 function NavigationBar() {
