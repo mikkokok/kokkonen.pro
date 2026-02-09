@@ -1,6 +1,7 @@
 import {getAuthResponse} from "../auth/msal";
 import {handleFetch} from "../fetchUtils";
-import {consumptionDataSchema} from "./validation/consumptionData";
+import {MQStatusEnum} from "./types/mqStatusEnum";
+import {ConsumptionData, consumptionDataSchema} from "./validation/consumptionData";
 import {mQStatusEnumSchema} from "./validation/mqResponse";
 import {TaskResponse, taskResponseSchema} from "./validation/taskResponse";
 import {HubConnection, HubConnectionBuilder, LogLevel} from '@microsoft/signalr';
@@ -18,13 +19,13 @@ export class ElectricityClient {
     return taskResponseSchema.parse(await response.json());
   }
 
-  public async getHistoryData() {
+  public async getHistoryData(): Promise<ConsumptionData[]> {
     const request = new Request(`${this.baseUrl}api/electricity/consumption/history`, {method: 'GET'});
     const response = await handleFetch(request);
     return consumptionDataSchema.array().parse(await response.json());
   }
 
-  public async getMQStatus() {
+  public async getMQStatus(): Promise<MQStatusEnum> {
     const request = new Request(`${this.baseUrl}api/electricity/status`, {method: 'GET'});
     const response = await handleFetch(request);
     return mQStatusEnumSchema.parse(await response.json())

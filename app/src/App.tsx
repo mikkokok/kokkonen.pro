@@ -6,7 +6,7 @@ import NavigationBar from './components/NavigationBar';
 import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
 import {AuthProvider} from './contexts/AuthContext';
-import Electricity from './components/Electricity';
+import Electricity from './components/Electricity/Electricity';
 
 function App() {
   return (

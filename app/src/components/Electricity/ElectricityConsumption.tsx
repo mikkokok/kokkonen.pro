@@ -1,6 +1,6 @@
 import {HubConnection} from '@microsoft/signalr';
-import {useEffect, useRef, useState} from 'react';
-import {backendUrl} from '../config/config';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {backendUrl} from '../../config/config';
 import {
   ConsumptionData,
   consumptionDataSchema,
@@ -8,25 +8,18 @@ import {
   translateKey,
   translateUnit,
   validConsumptionKeys
-} from '../lib/electricity/validation/consumptionData';
+} from '../../lib/electricity/validation/consumptionData';
 import {useIsAuthenticated} from '@azure/msal-react';
 import {useNavigate} from 'react-router-dom';
-import {ElectricityClient} from '../lib/electricity/electricityClient';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
-import {Badge} from './ui/badge';
-import {Checkbox} from './ui/checkbox';
+import {ElectricityClient} from '../../lib/electricity/electricityClient';
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/card';
+import {Badge} from '../ui/badge';
+import {Checkbox} from '../ui/checkbox';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
-import {useAuth} from '../contexts/AuthContext';
-import {convertMQStatusEnumToString} from '../lib/electricity/validation/mqResponse';
+import {useAuth} from '../../contexts/AuthContext';
+import {convertMQStatusEnumToString} from '../../lib/electricity/validation/mqResponse';
 
-const cumulativePowerConsumption: ConsumptionKeys[] = ['CumulativePowerConsumption'];
-const cumulativePowerYield: ConsumptionKeys[] = ['CumulativePowerYield'];
 const actualKeys: ConsumptionKeys[] = ['ActualConsumption', 'ActualReturndelivery'];
-const voltageKeys: ConsumptionKeys[] = ['L1Voltage', 'L2Voltage', 'L3Voltage'];
-const currentKeys: ConsumptionKeys[] = ['L1InstantPowerCurrent', 'L2InstantPowerCurrent', 'L3InstantPowerCurrent'];
-const otherKeys: ConsumptionKeys[] = validConsumptionKeys.filter(
-  key => !actualKeys.includes(key) && key !== 'CumulativePowerConsumption' && key !== 'CumulativePowerYield' && !voltageKeys.includes(key)
-);
 const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
 
 function ElectricityConsumption() {
@@ -45,7 +38,7 @@ function ElectricityConsumption() {
   const isAuthenticated = useIsAuthenticated();
   const {isReady} = useAuth();
   const navigate = useNavigate();
-  const eClientRef = useRef<ElectricityClient | null>(null);
+  const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -54,9 +47,6 @@ function ElectricityConsumption() {
     }
     if (!isReady) {
       return;
-    }
-    if (!eClientRef.current) {
-      eClientRef.current = new ElectricityClient(backendUrl);
     }
 
     const currentConnection = connection.current;
@@ -67,7 +57,7 @@ function ElectricityConsumption() {
 
       const setupConnection = async () => {
         try {
-          const hubConnection = await eClientRef.current!.getElectricityHubConnection();
+          const hubConnection = await electricityClient.getElectricityHubConnection();
 
           hubConnection.on('broadcastConsumptionData', (data: ConsumptionData) => {
             try {
@@ -97,16 +87,16 @@ function ElectricityConsumption() {
         void currentConnection.stop();
       }
     };
-  }, [isReady, isAuthenticated, navigate]);
+  }, [isReady, isAuthenticated, navigate, electricityClient]);
 
   useEffect(() => {
-    if (!isReady || !isAuthenticated || !eClientRef.current) {
+    if (!isReady || !isAuthenticated) {
       return;
     }
 
     const fetchMqStatus = async () => {
       try {
-        const status = await eClientRef.current!.getMQStatus();
+        const status = await electricityClient.getMQStatus();
         setMqStatus(convertMQStatusEnumToString(status));
         setMqStatusUpdatedAt(new Date().toLocaleString('fi-FI'));
       } catch (error) {
@@ -123,16 +113,16 @@ function ElectricityConsumption() {
     }, 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [isReady, isAuthenticated]);
+  }, [isReady, isAuthenticated, electricityClient]);
 
   useEffect(() => {
-    if (!isReady || !isAuthenticated || !eClientRef.current) {
+    if (!isReady || !isAuthenticated) {
       return;
     }
 
     const fetchHistoryData = async () => {
       try {
-        const historyData = await eClientRef.current!.getHistoryData();
+        const historyData = await electricityClient.getHistoryData();
         setHistoryData(historyData);
       } catch (error) {
         console.log('Failed to fetch history data', error);
@@ -146,7 +136,7 @@ function ElectricityConsumption() {
     }, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [isReady, isAuthenticated]);
+  }, [isReady, isAuthenticated, electricityClient]);
 
   if (!isReady) {
     return (
@@ -182,13 +172,7 @@ function ElectricityConsumption() {
         if (value === undefined) {
           return [translateKey(key), undefined];
         }
-        if (voltageKeys.includes(key)) {
-          return [translateKey(key), value / 1000];
-        }
         if (key.includes('Current')) {
-          return [translateKey(key), value / 1000];
-        }
-        if (key.includes('Cumulative')) {
           return [translateKey(key), value / 1000];
         }
         return [translateKey(key), value];
@@ -197,31 +181,6 @@ function ElectricityConsumption() {
   })) || [];
 
   const getChartFormatter = (keys: ConsumptionKeys[]) => {
-    const isVoltageChart = keys.every(key => voltageKeys.includes(key));
-    const isCurrentChart = keys.some(key => currentKeys.includes(key));
-    const isCumulativeChart = keys.some(key => key.includes('Cumulative'));
-
-    if (isVoltageChart) {
-      return {
-        domain: [220, 240] as [number, number],
-        tickFormatter: (value: number) => `${value.toFixed(0)}V`,
-        tooltipFormatter: (value: number) => `${value.toFixed(2)} V`
-      };
-    }
-    if (isCurrentChart) {
-      return {
-        domain: ['auto', 'auto'] as ['auto', 'auto'],
-        tickFormatter: (value: number) => `${value.toFixed(1)}A`,
-        tooltipFormatter: (value: number) => `${value.toFixed(2)} A`
-      };
-    }
-    if (isCumulativeChart) {
-      return {
-        domain: ['auto', 'auto'] as ['auto', 'auto'],
-        tickFormatter: (value: number) => `${value.toFixed(0)}kWh`,
-        tooltipFormatter: (value: number) => `${value.toFixed(2)} kWh`
-      };
-    }
     return {
       domain: ['auto', 'auto'] as ['auto', 'auto'],
       tickFormatter: undefined,
@@ -364,27 +323,6 @@ function ElectricityConsumption() {
         'Actual Consumption & Return Delivery',
         `Current power usage and return delivery (${historyData?.length || 0} data points)`,
         actualKeys
-      )}
-      {renderChart(
-        'Cumulative Power Consumption',
-        `Total energy consumption over time (${historyData?.length || 0} data points)`,
-        cumulativePowerConsumption
-      )}
-      {renderChart(
-        'Cumulative Power Yield',
-        `Total energy yield over time (${historyData?.length || 0} data points)`,
-        cumulativePowerYield
-      )}
-      {renderChart(
-        'Power Details',
-        `Detailed power usage, current, and voltage per phase (${historyData?.length || 0} data points)`,
-        otherKeys,
-        true
-      )}
-      {renderChart(
-        'Voltage Details',
-        `Detailed voltage per phase (${historyData?.length || 0} data points)`,
-        voltageKeys
       )}
     </div>
   );
