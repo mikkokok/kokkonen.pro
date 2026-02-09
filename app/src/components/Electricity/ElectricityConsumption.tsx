@@ -42,7 +42,7 @@ function ElectricityConsumption() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      void navigate('/login');
       return;
     }
     if (!isReady) {
@@ -180,7 +180,7 @@ function ElectricityConsumption() {
     )
   })) || [];
 
-  const getChartFormatter = (keys: ConsumptionKeys[]) => {
+  const getChartFormatter = () => {
     return {
       domain: ['auto', 'auto'] as ['auto', 'auto'],
       tickFormatter: undefined,
@@ -196,7 +196,7 @@ function ElectricityConsumption() {
   };
 
   const renderChart = (title: string, description: string, keys: ConsumptionKeys[], showToggles = false) => {
-    const formatter = getChartFormatter(keys);
+    const formatter = getChartFormatter();
 
     return (
       <Card>

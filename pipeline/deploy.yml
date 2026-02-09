@@ -18,12 +18,20 @@ stages:
       displayName: 'Install Node.js'
       inputs:
         versionSpec: '20.x'
-    
-    - task: Npm@1
-      displayName: 'npm install dependencies'
+
+    - task: Cache@2
+      displayName: 'Cache npm'
       inputs:
-        workingDir: '$(Build.SourcesDirectory)/app'
-        verbose: true
+        key: 'npm | "$(Agent.OS)" | app/package-lock.json'
+        restoreKeys: |
+          npm | "$(Agent.OS)"
+        path: '$(Pipeline.Workspace)/.npm'
+    
+    - script: |
+        npm config set cache "$(Pipeline.Workspace)/.npm" --global
+        npm ci
+      workingDirectory: '$(Build.SourcesDirectory)/app'
+      displayName: 'npm ci'
 
     - task: Npm@1
       displayName: 'npm install'

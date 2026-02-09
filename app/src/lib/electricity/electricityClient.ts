@@ -28,16 +28,17 @@ export class ElectricityClient {
   public async getMQStatus(): Promise<MQStatusEnum> {
     const request = new Request(`${this.baseUrl}api/electricity/status`, {method: 'GET'});
     const response = await handleFetch(request);
-    return mQStatusEnumSchema.parse(await response.json())
+    return mQStatusEnumSchema.parse(await response.json());
   }
 
-  public async getElectricityHubConnection(): Promise<HubConnection> {
-    const authResponse = await getAuthResponse();
+  public getElectricityHubConnection(): Promise<HubConnection> {
     const hubConnection = new HubConnectionBuilder()
-      .withUrl(`${this.baseUrl}api/electricity/consumption`, {accessTokenFactory: () => authResponse.accessToken})
+      .withUrl(`${this.baseUrl}api/electricity/consumption`, {
+        accessTokenFactory: async () => (await getAuthResponse()).accessToken,
+      })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
-    return hubConnection;
+    return Promise.resolve(hubConnection);
   }
 }

@@ -6,13 +6,22 @@ import ReactDOM from 'react-dom/client';
 import React from 'react';
 import {MsalProvider} from '@azure/msal-react';
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(
-  <React.StrictMode>
-    <MsalProvider instance={await getMsalInstance()}>
-      <Router>
-        <App />
-      </Router>
-    </MsalProvider>
-  </React.StrictMode>
-);
+async function bootstrap() {
+  const instance = await getMsalInstance();
+  const rootElement = document.getElementById('root') as HTMLElement;
+  const root = ReactDOM.createRoot(rootElement);
+
+  root.render(
+    <React.StrictMode>
+      <MsalProvider instance={instance}>
+        <Router>
+          <App />
+        </Router>
+      </MsalProvider>
+    </React.StrictMode>
+  );
+}
+
+bootstrap().catch((error) => {
+  console.error('Failed to bootstrap application', error);
+});

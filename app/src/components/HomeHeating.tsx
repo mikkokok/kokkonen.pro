@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
 import {Button} from './ui/button';
 import {Input} from './ui/input';
@@ -53,7 +53,7 @@ export function HomeHeating() {
   const [trvTaskStatus, setTrvTaskStatus] = useState<TrvTaskResponse | undefined>(undefined);
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       await Promise.all([
         heatHarmonyClient.getPingStatus().then(setHeatAutomationPingStatus),
@@ -72,13 +72,15 @@ export function HomeHeating() {
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
-  };
+  }, [heatHarmonyClient]);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60000); // Refresh every 60s
+    void fetchData();
+    const interval = setInterval(() => {
+      void fetchData();
+    }, 60000); // Refresh every 60s
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const handleSetOverride = async () => {
     setLoading(true);

@@ -1,17 +1,17 @@
-import {getAuthResponse} from "./auth/msal";
+import {getAuthResponse} from './auth/msal';
 
-export async function patchAuthHeaders(request: Request): Promise<boolean> {
+export async function patchAuthHeaders(request: Request): Promise<void> {
     const authResult = await getAuthResponse();
-    if (authResult.accessToken) {
-        request.headers.set('Authorization', `Bearer ${authResult.accessToken}`);
+    if (!authResult.accessToken) {
+        throw new Error('No access token available for authenticated request.');
     }
-    else {
-        return false;
-    }
-    if (request.body) {
+
+    request.headers.set('Authorization', `Bearer ${authResult.accessToken}`);
+
+    const isJsonMethod = request.method !== 'GET' && request.method !== 'HEAD';
+    if (isJsonMethod && request.body && !request.headers.has('Content-Type')) {
         request.headers.set('Content-Type', 'application/json');
     }
-    return true;
 }
 
 export async function handleFetchErrors(response: Response): Promise<void> {

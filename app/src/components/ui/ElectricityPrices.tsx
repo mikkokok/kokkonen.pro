@@ -1,10 +1,8 @@
-import {Car} from "@hugeicons/core-free-icons";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./card";
 import {backendUrl} from "../../config/config";
 import {HeatHarmonyClient} from "../../lib/heatHarmony/heatHarmonyClient";
-import {useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {Separator} from "./separator";
-import {Badge} from "./badge";
 import {PricesResponse} from "../../lib/heatHarmony/validation/pricesResponse";
 import {NightPeriod, TodayLowPricePeriodsResponse} from "../../lib/heatHarmony/validation/lowPricePeriods";
 
@@ -15,7 +13,8 @@ export default function ElectricityPrices() {
   const [nightPeriod, setNightPeriod] = useState<NightPeriod | undefined>(undefined);
   const [todayLowPricePeriods, setTodayLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
   const [allLowPricePeriods, setAllLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
-  const fetchData = async () => {
+
+  const fetchData = useCallback(async () => {
     try {
       const todayElectricityPrices = await heatHarmonyClient.getTodayElectricityPrices();
       setTodayPrices(todayElectricityPrices);
@@ -30,11 +29,11 @@ export default function ElectricityPrices() {
     } catch (error) {
       console.error("Error fetching electricity prices:", error);
     }
-  }
+  }, [heatHarmonyClient]);
 
   useEffect(() => {
-    fetchData();
-  }, [heatHarmonyClient]);
+    void fetchData();
+  }, [fetchData]);
 
 
   return (

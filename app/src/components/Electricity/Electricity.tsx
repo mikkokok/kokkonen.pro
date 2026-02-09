@@ -1,12 +1,6 @@
 import ElectricityConsumption from "./ElectricityConsumption"
 import {ElectricityDetails} from "./ElectricityDetails"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card"
+import {CardContent} from "../ui/card"
 import ElectricityPrices from "../ui/ElectricityPrices"
 import {
   Tabs,

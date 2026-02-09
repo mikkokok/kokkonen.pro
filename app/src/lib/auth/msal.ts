@@ -12,8 +12,8 @@ export const msalConfig: Configuration = {
   },
   system: {
     loggerOptions: {
-      loggerCallback: (level: LogLevel, message: string, constainsPii: boolean) => {
-        if (constainsPii) {
+      loggerCallback: (level: LogLevel, message: string, containsPii: boolean) => {
+        if (containsPii) {
           return;
         }
         switch (level) {
@@ -55,25 +55,28 @@ async function initMsalInstance(): Promise<PublicClientApplication> {
 
 let msalInstance: Promise<PublicClientApplication> | null = null;
 
-export async function getMsalInstance(): Promise<PublicClientApplication> {
+export function getMsalInstance(): Promise<PublicClientApplication> {
   if (!msalInstance) {
     msalInstance = initMsalInstance();
-
   }
   return msalInstance;
 }
 
 export async function getAuthResponse() {
+  const msalInstance = await getMsalInstance();
+  const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0] ?? null;
+  if (!account) {
+    throw new Error('No signed-in account found.');
+  }
+
   const silentRequest: SilentRequest = {
     scopes: apiScopes,
+    account,
   };
-  const msalInstance = await getMsalInstance();
+
   let response: AuthenticationResult | undefined;
   try {
     response = await msalInstance.acquireTokenSilent(silentRequest);
-    if (!msalInstance.getActiveAccount()) {
-      msalInstance.setActiveAccount(response.account);
-    }
     msalInstance.setActiveAccount(response.account);
   } catch (error) {
     msalInstance.setActiveAccount(null);
@@ -84,4 +87,4 @@ export async function getAuthResponse() {
     throw new Error('No active account found for authentication.');
   }
   return response;
-};
+}

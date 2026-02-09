@@ -7,22 +7,23 @@ import {PublicClientApplication} from "@azure/msal-browser";
 import {backendUrl} from "../config/config";
 import {HeatHarmonyClient} from "../lib/heatHarmony/heatHarmonyClient";
 import {OumanLatestResponse} from "../lib/heatHarmony/validation/oumanLatestResponse";
-import {DropletIcon, TemperatureIcon} from "@hugeicons/core-free-icons";
+import {TemperatureIcon} from "@hugeicons/core-free-icons";
 import {HugeiconsIcon} from '@hugeicons/react';
+import {useCallback} from "react";
 
 function Home() {
   const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
   const [oumanLatest, setOumanLatest] = useState<OumanLatestResponse | undefined>(undefined);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const oumanLatestData = await heatHarmonyClient.getOumanLatestData();
       setOumanLatest(oumanLatestData);
     } catch (error) {
       console.error("Error fetching latest data:", error);
     }
-  }
+  }, [heatHarmonyClient]);
 
   useEffect(() => {
     const initMsal = async () => {
@@ -33,10 +34,12 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60000); // Refresh every 60s
+    void fetchData();
+    const interval = setInterval(() => {
+      void fetchData();
+    }, 60000); // Refresh every 60s
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   // Use msalInstance only after it's initialized
   if (!msalInstance) {
