@@ -1,20 +1,21 @@
+import {cn} from '../lib/utils';
 import {useAccount} from '@azure/msal-react';
-import {AppBar, Box, Toolbar, Typography} from '@mui/material';
 
 function Header() {
   const account = useAccount();
-
   return (
-    <AppBar position="static">
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
-          Kokkonen.pro home dashboard
-        </Typography>
-      </Toolbar>
-      <Toolbar sx={{justifyContent: 'space-between'}}>
-        <Box>{account && <p>Hello {account.name}</p>}</Box>
-      </Toolbar>
-    </AppBar>
+    <header className={cn(
+      "bg-gray-900 text-white p-4 border-b border-gray-800",
+      "flex justify-between items-center h-16"
+    )}>
+      <div><h1 className="text-xl font-bold ">Kokkonen.pro</h1></div>
+      <div>Home dashboard</div>
+
+      <div className="flex gap-4">
+        <p className="hover:text-orange-400 transition-colors">{account && `Hello ${account.name} (${account.username})`}</p>
+
+      </div>
+    </header>
   );
 }
 

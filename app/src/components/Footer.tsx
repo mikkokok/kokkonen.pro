@@ -1,7 +1,8 @@
-import {Box} from '@mui/material';
-
 function Footer() {
-  return <Box component="footer" sx={{mt: 'auto', p: 4, textAlign: 'center', width: '600px', bgcolor: 'primary.main', color: 'primary.contrasText'}} />;
+    return (
+      <footer className="bg-gray-900 text-gray-500 p-4 border-t border-gray-800 text-center text-sm">
+      </footer>
+    );
 }
 
 export default Footer;

@@ -5,21 +5,23 @@ import {getMsalInstance} from './lib/auth/msal.ts';
 import ReactDOM from 'react-dom/client';
 import React from 'react';
 import {MsalProvider} from '@azure/msal-react';
-import {ThemeProvider} from '@mui/material';
-import theme from './lib/theme/theme.ts';
 
-const msalInstance = getMsalInstance();
+async function bootstrap() {
+  const instance = await getMsalInstance();
+  const rootElement = document.getElementById('root') as HTMLElement;
+  const root = ReactDOM.createRoot(rootElement);
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-
-root.render(
-  <React.StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <ThemeProvider theme={theme}>
+  root.render(
+    <React.StrictMode>
+      <MsalProvider instance={instance}>
         <Router>
           <App />
         </Router>
-      </ThemeProvider>
-    </MsalProvider>
-  </React.StrictMode>,
-);
+      </MsalProvider>
+    </React.StrictMode>
+  );
+}
+
+bootstrap().catch((error) => {
+  console.error('Failed to bootstrap application', error);
+});
