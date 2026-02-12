@@ -26,12 +26,19 @@ stages:
         restoreKeys: |
           npm | "$(Agent.OS)"
         path: '$(Pipeline.Workspace)/.npm'
-    
+
     - script: |
         npm config set cache "$(Pipeline.Workspace)/.npm" --global
+        npm ci
       workingDirectory: '$(Build.SourcesDirectory)/app'
-      displayName: 'npm config set cache'
+      displayName: 'npm ci'
 
+    - task: Npm@1
+      displayName: 'npm install dependencies'
+      inputs:
+        workingDir: '$(Build.SourcesDirectory)/app'
+        verbose: true
+    
     - task: Npm@1
       displayName: 'npm install'
       inputs:
