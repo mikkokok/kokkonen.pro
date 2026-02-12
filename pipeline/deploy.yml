@@ -29,9 +29,8 @@ stages:
     
     - script: |
         npm config set cache "$(Pipeline.Workspace)/.npm" --global
-        npm ci
       workingDirectory: '$(Build.SourcesDirectory)/app'
-      displayName: 'npm ci'
+      displayName: 'npm config set cache'
 
     - task: Npm@1
       displayName: 'npm install'
