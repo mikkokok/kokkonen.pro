@@ -76,6 +76,8 @@ stages:
         RunAsPreJob: true
         
     - script: |
+        echo $(Build.SourcesDirectory)
+        ls -al $(Build.SourcesDirectory)
         chmod +x $(Build.SourcesDirectory)/pipeline/deploy.sh
         $(Build.SourcesDirectory)/pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
       displayName: 'Copy files to remote Windows server using deploy.sh'
