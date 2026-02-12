@@ -53,7 +53,7 @@ stages:
   - job: Deploy
     displayName: 'Deploy on Local Ubuntu Agent'
     pool:
-      name: 'local'
+      name: 'linux'
     steps:
     - task: DownloadBuildArtifacts@0
       inputs:
