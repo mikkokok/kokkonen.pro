@@ -84,5 +84,5 @@ stages:
         cd $(Build.SourcesDirectory)
         ls -al
         ls -al pipeline
-        ./pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
+        $(Build.SourcesDirectory)/pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
       displayName: 'Copy files to remote Windows server using deploy.sh'
