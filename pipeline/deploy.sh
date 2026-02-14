@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+echo "Starting deployment script..."
 set -e
 
 ARTIFACT_PATH="$1"

@@ -26,13 +26,19 @@ stages:
         restoreKeys: |
           npm | "$(Agent.OS)"
         path: '$(Pipeline.Workspace)/.npm'
-    
+
     - script: |
         npm config set cache "$(Pipeline.Workspace)/.npm" --global
         npm ci
       workingDirectory: '$(Build.SourcesDirectory)/app'
       displayName: 'npm ci'
 
+    - task: Npm@1
+      displayName: 'npm install dependencies'
+      inputs:
+        workingDir: '$(Build.SourcesDirectory)/app'
+        verbose: true
+    
     - task: Npm@1
       displayName: 'npm install'
       inputs:
@@ -70,6 +76,8 @@ stages:
         RunAsPreJob: true
         
     - script: |
-        chmod +x ./pipeline/deploy.sh
-        ./pipeline/deploy.sh "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
+        echo $(Build.SourcesDirectory)
+        chmod +x $(Build.SourcesDirectory)/pipeline/deploy.sh
+        echo "Deploying files to remote Windows server..."
+        bash "$(Build.SourcesDirectory)/pipeline/deploy.sh" "$(System.ArtifactsDirectory)/$(artifactName)/*" "$(webServerUser)" "$(webServerPassword)" "$(webServerIp)"
       displayName: 'Copy files to remote Windows server using deploy.sh'
