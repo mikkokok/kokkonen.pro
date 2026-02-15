@@ -132,8 +132,12 @@ export function HomeHeating() {
     try {
       if (action === 'enable') {
         await heatHarmonyClient.enableOilburner();
+        const data = await heatHarmonyClient.getOilburnerLatestData();
+        setOilburnerLatest(data);
       } else {
         await heatHarmonyClient.disableOilburner();
+        const data = await heatHarmonyClient.getOilburnerLatestData();
+        setOilburnerLatest(data);
       }
       await fetchData();
     } catch (error) {
@@ -151,6 +155,8 @@ export function HomeHeating() {
       } else {
         await heatHarmonyClient.disableUseWaterHeater();
       }
+      const data = await heatHarmonyClient.getUseWaterHeaterLatest();
+      setUseWaterHeaterLatest(data);
       await fetchData();
     } catch (error) {
       console.error(`Failed to ${action} use water heater:`, error);
@@ -167,6 +173,8 @@ export function HomeHeating() {
       } else {
         await heatHarmonyClient.setDisableUseWaterHeaterOverride(useWaterOverrideHours);
       }
+      const data = await heatHarmonyClient.getUseWaterHeaterLatest();
+      setUseWaterHeaterLatest(data);
       await fetchData();
     } catch (error) {
       console.error(`Failed to set use water heater override (${mode}):`, error);
@@ -179,6 +187,8 @@ export function HomeHeating() {
     setLoading(true);
     try {
       await heatHarmonyClient.deleteUseWaterHeaterOverride();
+      const data = await heatHarmonyClient.getUseWaterHeaterLatest();
+      setUseWaterHeaterLatest(data);
       await fetchData();
     } catch (error) {
       console.error('Failed to clear use water heater override:', error);

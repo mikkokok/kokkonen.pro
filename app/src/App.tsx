@@ -12,8 +12,8 @@ function App() {
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
       <Header />
-      <div className="app-container flex flex-1 overflow-hidden">
-        <div className='navigation'>
+      <div className="app-container flex flex-1 overflow-hidden flex-col md:flex-row">
+        <div className='navigation shrink-0'>
           <NavigationBar />
         </div>
         <div className='flex-1 overflow-auto p-4'>
