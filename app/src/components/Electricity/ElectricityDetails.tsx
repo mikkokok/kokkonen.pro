@@ -5,7 +5,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/c
 import {Checkbox} from '../ui/checkbox';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 
-import {ConsumptionData, ConsumptionKeys, translateKey, validConsumptionKeys} from "../../lib/electricity/validation/consumptionData";
+import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit, validConsumptionKeys} from "../../lib/electricity/validation/consumptionData";
 export function ElectricityDetails() {
   const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
   const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(
@@ -45,29 +45,37 @@ export function ElectricityDetails() {
     const isCurrentChart = keys.some(key => currentKeys.includes(key));
     const isCumulativeChart = keys.some(key => key.includes('Cumulative'));
 
+    const units = Array.from(new Set(keys.map(translateUnit)));
+    const hasSingleUnit = units.length === 1;
+    const defaultUnit = hasSingleUnit ? units[0] : undefined;
+
     if (isVoltageChart) {
       return {
         domain: [220, 240] as [number, number],
-        tickFormatter: (value: number) => `${value.toFixed(0)}V`,
+        yAxisUnitLabel: 'V' as const,
+        tickFormatter: (value: number) => `${value.toFixed(0)}`,
         tooltipFormatter: (value: number) => `${value.toFixed(2)} V`
       };
     }
     if (isCurrentChart) {
       return {
         domain: ['auto', 'auto'] as ['auto', 'auto'],
-        tickFormatter: (value: number) => `${value.toFixed(1)}A`,
+        yAxisUnitLabel: 'A' as const,
+        tickFormatter: (value: number) => `${value.toFixed(1)}`,
         tooltipFormatter: (value: number) => `${value.toFixed(2)} A`
       };
     }
     if (isCumulativeChart) {
       return {
         domain: ['auto', 'auto'] as ['auto', 'auto'],
-        tickFormatter: (value: number) => `${value.toFixed(0)}kWh`,
+        yAxisUnitLabel: 'kWh' as const,
+        tickFormatter: (value: number) => `${value.toFixed(0)}`,
         tooltipFormatter: (value: number) => `${value.toFixed(2)} kWh`
       };
     }
     return {
       domain: ['auto', 'auto'] as ['auto', 'auto'],
+      yAxisUnitLabel: defaultUnit,
       tickFormatter: undefined,
       tooltipFormatter: (value: number) => `${value.toFixed(2)}`
     };
@@ -143,14 +151,30 @@ export function ElectricityDetails() {
                 <XAxis
                   dataKey="timestamp"
                   className="text-xs"
-                  tick={{fill: 'hsl(var(--muted-foreground))'}}
+                  tick={{fill: '#fff'}}
+                  stroke="#fff"
+                  tickLine={{stroke: '#fff'}}
+                  axisLine={{stroke: '#fff'}}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{fill: 'hsl(var(--muted-foreground))'}}
+                  tick={{fill: '#fff'}}
+                  stroke="#fff"
+                  tickLine={{stroke: '#fff'}}
+                  axisLine={{stroke: '#fff'}}
+                  label={
+                    formatter.yAxisUnitLabel
+                      ? {
+                        value: formatter.yAxisUnitLabel,
+                        angle: -90,
+                        position: 'insideLeft',
+                        fill: '#fff',
+                      }
+                      : undefined
+                  }
                   domain={formatter.domain}
                   tickFormatter={formatter.tickFormatter}
                 />

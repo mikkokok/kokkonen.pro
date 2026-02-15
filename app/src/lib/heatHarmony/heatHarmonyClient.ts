@@ -18,6 +18,7 @@ import {TrvTaskResponse, trvTaskResponseSchema} from "./validation/trvTaskRespon
 import {OilburnerLatestResponse, oilburnerLatestResponseSchema} from "./validation/oilburnerLatestResponse";
 import {EMOverrideStatusResponse, eMOverrideStatusResponseSchema} from "./validation/eMOverrideStatusResponse";
 import {EMOverrideResponse, eMOverrideResponseSchema} from "./validation/eMOverrideResponse";
+import {EMLatestResponse, eMLatestResponseSchema} from "./validation/eMLatestResponse";
 
 export class HeatHarmonyClient {
     private baseUrl: string;
@@ -191,6 +192,14 @@ export class HeatHarmonyClient {
         });
         const response = await handleFetch(request);
         return oilburnerLatestResponseSchema.parse(await response.json());
+    }
+
+    public async getUseWaterHeaterLatest(): Promise<EMLatestResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/em/latest`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return eMLatestResponseSchema.parse(await response.json());
     }
 
     public async enableUseWaterHeater() {
