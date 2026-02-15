@@ -6,9 +6,9 @@ import {Home08Icon, Login02Icon, TemperatureIcon, ElectricHome01Icon} from '@hug
 
 const navItems = [
   {text: 'Home', path: '/', hidden: true, icon: Home08Icon},
-  {text: 'Login', path: '/login', hidden: false, icon: Login02Icon},
   {text: 'Home heating', path: '/home-heating', hidden: true, icon: TemperatureIcon},
   {text: 'Electricity', path: '/electricity', hidden: true, icon: ElectricHome01Icon},
+  {text: 'Login', path: '/login', hidden: false, icon: Login02Icon},
 ];
 
 function NavigationBar() {

@@ -5,31 +5,29 @@ import {HomeHeating} from './components/HomeHeating';
 import NavigationBar from './components/NavigationBar';
 import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
-import {AuthProvider} from './contexts/AuthContext';
 import Electricity from './components/Electricity/Electricity';
+import RequireAuth from './components/RequireAuth';
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
-        <Header />
-        <div className="app-container flex flex-1 overflow-hidden">
-          <div className='navigation'>
-            <NavigationBar />
-          </div>
-          <div className='flex-1 overflow-auto p-4'>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/electricity" element={<Electricity />} />
-              <Route path="/home-heating" element={<HomeHeating />} />
-              <Route path="*" element={<Home />} />
-            </Routes>
-          </div>
+    <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
+      <Header />
+      <div className="app-container flex flex-1 overflow-hidden">
+        <div className='navigation'>
+          <NavigationBar />
         </div>
-        <Footer />
+        <div className='flex-1 overflow-auto p-4'>
+          <Routes>
+            <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/electricity" element={<RequireAuth><Electricity /></RequireAuth>} />
+            <Route path="/home-heating" element={<RequireAuth><HomeHeating /></RequireAuth>} />
+            <Route path="*" element={<RequireAuth><Home /></RequireAuth>} />
+          </Routes>
+        </div>
       </div>
-    </AuthProvider>
+      <Footer />
+    </div>
   );
 }
 

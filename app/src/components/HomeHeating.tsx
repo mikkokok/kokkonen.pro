@@ -29,6 +29,11 @@ import {OumanTaskResponse} from '../lib/heatHarmony/validation/oumanTaskResponse
 import {TrvLatestResponse} from '../lib/heatHarmony/validation/trvLatestResponse';
 import {TrvTaskResponse} from '../lib/heatHarmony/validation/trvTaskResponse';
 import {HeatAutomationOverrideRequest} from '../lib/heatHarmony/types/heatAutomationOverrideRequest';
+import {OilburnerLatestResponse} from '../lib/heatHarmony/validation/oilburnerLatestResponse';
+import {convertHarmonyChangeEnumToString} from '../lib/heatHarmony/validation/harmonyChange';
+import {EMOverrideStatusResponse} from '../lib/heatHarmony/validation/eMOverrideStatusResponse';
+import {EMOverrideMode} from '../lib/heatHarmony/types/emOverrrideMode';
+import {EMLatestResponse} from '../lib/heatHarmony/validation/eMLatestResponse';
 
 export function HomeHeating() {
   const [loading, setLoading] = useState(false);
@@ -51,6 +56,10 @@ export function HomeHeating() {
 
   const [trvLatest, setTrvLatest] = useState<TrvLatestResponse | undefined>(undefined);
   const [trvTaskStatus, setTrvTaskStatus] = useState<TrvTaskResponse | undefined>(undefined);
+  const [oilburnerLatest, setOilburnerLatest] = useState<OilburnerLatestResponse | undefined>(undefined);
+  const [enableUseWaterHeaterData, setEnableUseWaterHeaterData] = useState<EMOverrideStatusResponse | undefined>(undefined);
+  const [useWaterHeaterLatest, setUseWaterHeaterLatest] = useState<EMLatestResponse | undefined>(undefined);
+  const [useWaterOverrideHours, setUseWaterOverrideHours] = useState<number>(2);
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
 
   const fetchData = useCallback(async () => {
@@ -68,11 +77,16 @@ export function HomeHeating() {
         heatHarmonyClient.getHeishamonTaskStatus().then(setHeishamonTaskStatus),
         heatHarmonyClient.getTrvLatestData().then(setTrvLatest),
         heatHarmonyClient.getTrvTaskStatus().then(setTrvTaskStatus),
+        heatHarmonyClient.getOilburnerLatestData().then(setOilburnerLatest),
+        heatHarmonyClient.getUseWaterHeaterLatest().then(setUseWaterHeaterLatest),
+        heatHarmonyClient.getUseWaterHeaterOverrideStatus().then(setEnableUseWaterHeaterData),
       ].map((p) => p.catch((error) => console.warn('HeatHarmony fetch failed:', error))));
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
   }, [heatHarmonyClient]);
+
+  console.log('ouman status', oumanStatus);
 
   useEffect(() => {
     void fetchData();
@@ -129,10 +143,66 @@ export function HomeHeating() {
     }
   };
 
+  const handleUseWaterHeaterControl = async (action: 'enable' | 'disable') => {
+    setLoading(true);
+    try {
+      if (action === 'enable') {
+        await heatHarmonyClient.enableUseWaterHeater();
+      } else {
+        await heatHarmonyClient.disableUseWaterHeater();
+      }
+      await fetchData();
+    } catch (error) {
+      console.error(`Failed to ${action} use water heater:`, error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUseWaterHeaterOverride = async (mode: 'enable' | 'disable') => {
+    setLoading(true);
+    try {
+      if (mode === 'enable') {
+        await heatHarmonyClient.setEnableUseWaterHeaterOverride(useWaterOverrideHours);
+      } else {
+        await heatHarmonyClient.setDisableUseWaterHeaterOverride(useWaterOverrideHours);
+      }
+      await fetchData();
+    } catch (error) {
+      console.error(`Failed to set use water heater override (${mode}):`, error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearUseWaterHeaterOverride = async () => {
+    setLoading(true);
+    try {
+      await heatHarmonyClient.deleteUseWaterHeaterOverride();
+      await fetchData();
+    } catch (error) {
+      console.error('Failed to clear use water heater override:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatDateTime = (value: string | undefined) => {
     if (!value) return '—';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  };
+
+  const getUseWaterOverrideLabel = () => {
+    if (!enableUseWaterHeaterData?.isOverrideActive) return 'No override';
+    switch (enableUseWaterHeaterData.overrideMode) {
+      case EMOverrideMode.Enable:
+        return 'Override: Enable';
+      case EMOverrideMode.Disable:
+        return 'Override: Disable';
+      default:
+        return 'Override active';
+    }
   };
 
   const renderErrors = (errors: string[] | null | undefined) => {
@@ -245,7 +315,7 @@ export function HomeHeating() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Autodrive status</CardTitle>
+            <CardTitle className="text-sm font-medium">Shunt autodrive status</CardTitle>
             <HugeiconsIcon icon={TemperatureIcon} className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -394,7 +464,7 @@ export function HomeHeating() {
                 {(oumanStatus?.changes ?? []).slice(0, 5).map((c, idx) => (
                   <div key={idx} className="text-sm">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{c.changeType}</span>
+                      <span className="font-medium">{convertHarmonyChangeEnumToString(c.changeType)}</span>
                       <span className="text-xs text-muted-foreground">{formatDateTime(c.time)}</span>
                     </div>
                     {c.description && <div className="text-xs text-muted-foreground">{c.description}</div>}
@@ -415,7 +485,7 @@ export function HomeHeating() {
                 {(heishamonStatus?.changes ?? []).slice(0, 5).map((c, idx) => (
                   <div key={idx} className="text-sm">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{c.changeType}</span>
+                      <span className="font-medium">{convertHarmonyChangeEnumToString(c.changeType)}</span>
                       <span className="text-xs text-muted-foreground">{formatDateTime(c.time)}</span>
                     </div>
                     {c.description && <div className="text-xs text-muted-foreground">{c.description}</div>}
@@ -432,26 +502,110 @@ export function HomeHeating() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Oil Burner Control</CardTitle>
-          <CardDescription>Manual control for backup heating</CardDescription>
+          <CardTitle>Heating Controls</CardTitle>
+          <CardDescription>Oil burner + water heater (use water) control and overrides</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => handleOilBurnerControl('enable')}
-              disabled={loading}
-              variant="default"
-            >
-              <HugeiconsIcon icon={FireIcon} className="mr-2 h-4 w-4" />
-              Enable Oil Burner
-            </Button>
-            <Button
-              onClick={() => handleOilBurnerControl('disable')}
-              disabled={loading}
-              variant="outline"
-            >
-              Disable Oil Burner
-            </Button>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">Oil burner</span>
+              <Badge variant={oilburnerLatest?.isRunning ? 'default' : 'destructive'} className="gap-1">
+                <HugeiconsIcon icon={FireIcon} className="h-3 w-3" />
+                {oilburnerLatest?.isRunning ? 'Enabled' : 'Disabled'}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => handleOilBurnerControl('enable')}
+                disabled={loading || oilburnerLatest?.isRunning}
+                variant="default"
+              >
+                <HugeiconsIcon icon={FireIcon} className="mr-2 h-4 w-4" />
+                Enable Oil Burner
+              </Button>
+              <Button
+                onClick={() => handleOilBurnerControl('disable')}
+                disabled={loading || !oilburnerLatest?.isRunning}
+                variant="outline"
+              >
+                Disable Oil Burner
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">Water heater (use water)</span>
+              <div className="flex items-center gap-2">
+                <Badge variant={useWaterHeaterLatest?.isOn ? 'default' : 'secondary'}>
+                  {useWaterHeaterLatest?.isOn ? 'On' : 'Off'}
+                </Badge>
+                <Badge variant={enableUseWaterHeaterData?.isOverrideActive ? 'secondary' : 'default'}>
+                  {getUseWaterOverrideLabel()}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>Running: {useWaterHeaterLatest?.isRunning === undefined ? '—' : useWaterHeaterLatest.isRunning ? 'Yes' : 'No'}</div>
+              <div>Last enabled: {formatDateTime(useWaterHeaterLatest?.lastEnabled)}</div>
+              <div>Override until: {formatDateTime(enableUseWaterHeaterData?.overrideUntil)}</div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => handleUseWaterHeaterControl('enable')}
+                disabled={loading}
+                variant="default"
+              >
+                Enable Use Water heating
+              </Button>
+              <Button
+                onClick={() => handleUseWaterHeaterControl('disable')}
+                disabled={loading}
+                variant="outline"
+              >
+                Disable Use Water heating
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="useWaterOverrideHours">Override duration (hours)</Label>
+                <Input
+                  id="useWaterOverrideHours"
+                  type="number"
+                  value={useWaterOverrideHours}
+                  onChange={(e: {target: {value: any}}) => setUseWaterOverrideHours(Number(e.target.value))}
+                  min={1}
+                  max={48}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 md:col-span-2">
+                <Button
+                  onClick={() => handleUseWaterHeaterOverride('enable')}
+                  disabled={loading}
+                >
+                  Override Enable
+                </Button>
+                <Button
+                  onClick={() => handleUseWaterHeaterOverride('disable')}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  Override Disable
+                </Button>
+                <Button
+                  onClick={handleClearUseWaterHeaterOverride}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  Clear Override
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

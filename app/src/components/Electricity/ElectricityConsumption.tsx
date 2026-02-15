@@ -9,15 +9,14 @@ import {
   translateUnit,
   validConsumptionKeys
 } from '../../lib/electricity/validation/consumptionData';
-import {useIsAuthenticated} from '@azure/msal-react';
-import {useNavigate} from 'react-router-dom';
 import {ElectricityClient} from '../../lib/electricity/electricityClient';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/card';
 import {Badge} from '../ui/badge';
 import {Checkbox} from '../ui/checkbox';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
-import {useAuth} from '../../contexts/AuthContext';
 import {convertMQStatusEnumToString} from '../../lib/electricity/validation/mqResponse';
+import {useMsal} from '@azure/msal-react';
+import {InteractionStatus} from '@azure/msal-browser';
 
 const actualKeys: ConsumptionKeys[] = ['ActualConsumption', 'ActualReturndelivery'];
 const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
@@ -35,17 +34,14 @@ function ElectricityConsumption() {
     Object.fromEntries(validConsumptionKeys.map(key => [key, true]))
   );
 
-  const isAuthenticated = useIsAuthenticated();
-  const {isReady} = useAuth();
-  const navigate = useNavigate();
+  const {accounts, inProgress} = useMsal();
   const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      void navigate('/login');
+    if (inProgress !== InteractionStatus.None) {
       return;
     }
-    if (!isReady) {
+    if (accounts.length === 0) {
       return;
     }
 
@@ -87,10 +83,13 @@ function ElectricityConsumption() {
         void currentConnection.stop();
       }
     };
-  }, [isReady, isAuthenticated, navigate, electricityClient]);
+  }, [accounts.length, inProgress, electricityClient]);
 
   useEffect(() => {
-    if (!isReady || !isAuthenticated) {
+    if (inProgress !== InteractionStatus.None) {
+      return;
+    }
+    if (accounts.length === 0) {
       return;
     }
 
@@ -113,10 +112,13 @@ function ElectricityConsumption() {
     }, 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [isReady, isAuthenticated, electricityClient]);
+  }, [accounts.length, inProgress, electricityClient]);
 
   useEffect(() => {
-    if (!isReady || !isAuthenticated) {
+    if (inProgress !== InteractionStatus.None) {
+      return;
+    }
+    if (accounts.length === 0) {
       return;
     }
 
@@ -136,9 +138,9 @@ function ElectricityConsumption() {
     }, 5 * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [isReady, isAuthenticated, electricityClient]);
+  }, [accounts.length, inProgress, electricityClient]);
 
-  if (!isReady) {
+  if (inProgress !== InteractionStatus.None) {
     return (
       <div className="p-6 space-y-6 w-full max-w-7xl mx-auto dark">
         <p className="text-sm text-muted-foreground">Initializing authentication...</p>

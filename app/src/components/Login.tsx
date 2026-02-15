@@ -1,24 +1,16 @@
 import {useIsAuthenticated} from '@azure/msal-react';
-import {getMsalInstance, loginRequest} from '../lib/auth/msal';
+import {useMsal} from '@azure/msal-react';
+import {InteractionStatus} from '@azure/msal-browser';
+import {loginRequest} from '../lib/auth/msal';
 import {Button} from "./ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
-import {useEffect, useState} from 'react';
-import {PublicClientApplication} from '@azure/msal-browser';
 
 function Login() {
-  const [instance, setInstance] = useState<PublicClientApplication | null>(null);
+  const {instance, inProgress} = useMsal();
   const isAuthenticated = useIsAuthenticated();
 
-  useEffect(() => {
-    const initMsal = async () => {
-      const msalInstance = await getMsalInstance();
-      setInstance(msalInstance);
-    };
-    void initMsal();
-  }, []);
-
   const handleLogin = async () => {
-    if (!instance) return;
+    if (inProgress !== InteractionStatus.None) return;
     try {
       const res = await instance.loginPopup(loginRequest);
       instance.setActiveAccount(res.account);
@@ -28,7 +20,7 @@ function Login() {
   };
 
   const handleLogout = async () => {
-    if (!instance) return;
+    if (inProgress !== InteractionStatus.None) return;
     try {
       await instance.logoutPopup({mainWindowRedirectUri: '/'});
       instance.setActiveAccount(null);
@@ -36,10 +28,6 @@ function Login() {
       console.log('Logout failed:', error);
     }
   };
-
-  if (!instance) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="flex items-center p-6 dark">

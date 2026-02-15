@@ -1,4 +1,13 @@
-import {AuthenticationResult, Configuration, LogLevel, PopupRequest, PublicClientApplication, SilentRequest} from '@azure/msal-browser';
+import {
+  AuthenticationResult,
+  Configuration,
+  EventMessage,
+  EventType,
+  LogLevel,
+  PopupRequest,
+  PublicClientApplication,
+  SilentRequest,
+} from '@azure/msal-browser';
 import {apiScopes, clientId, msalAuthority} from '../../config/config';
 
 export const msalConfig: Configuration = {
@@ -49,17 +58,48 @@ export const graphConfig = {
 async function initMsalInstance(): Promise<PublicClientApplication> {
   const client = new PublicClientApplication(msalConfig);
   await client.initialize();
+
+  try {
+    const redirectResult = await client.handleRedirectPromise();
+    if (redirectResult?.account) {
+      client.setActiveAccount(redirectResult.account);
+    }
+  } catch (error) {
+    console.log('MSAL redirect handling failed', error);
+  }
+
+  client.addEventCallback((message: EventMessage) => {
+    const payload = message.payload as AuthenticationResult | undefined;
+    if (!payload?.account) return;
+
+    switch (message.eventType) {
+      case EventType.LOGIN_SUCCESS:
+      case EventType.ACQUIRE_TOKEN_SUCCESS:
+        client.setActiveAccount(payload.account);
+        return;
+      default:
+        return;
+    }
+  });
+
+  if (!client.getActiveAccount()) {
+    const accounts = client.getAllAccounts();
+    if (accounts.length > 0) {
+      client.setActiveAccount(accounts[0]);
+    }
+  }
+
   return client;
 }
 
 
-let msalInstance: Promise<PublicClientApplication> | null = null;
+let msalInstancePromise: Promise<PublicClientApplication> | null = null;
 
 export function getMsalInstance(): Promise<PublicClientApplication> {
-  if (!msalInstance) {
-    msalInstance = initMsalInstance();
+  if (!msalInstancePromise) {
+    msalInstancePromise = initMsalInstance();
   }
-  return msalInstance;
+  return msalInstancePromise;
 }
 
 export async function getAuthResponse() {
@@ -79,7 +119,6 @@ export async function getAuthResponse() {
     response = await msalInstance.acquireTokenSilent(silentRequest);
     msalInstance.setActiveAccount(response.account);
   } catch (error) {
-    msalInstance.setActiveAccount(null);
     console.log('Silent token acquisition failed', error);
     throw error;
   }
