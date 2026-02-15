@@ -1,7 +1,7 @@
 import ElectricityConsumption from "./ElectricityConsumption"
 import {ElectricityDetails} from "./ElectricityDetails"
 import {CardContent} from "../ui/card"
-import ElectricityPrices from "../ui/ElectricityPrices"
+import ElectricityPrices from "./ElectricityPrices"
 import {
   Tabs,
   TabsContent,

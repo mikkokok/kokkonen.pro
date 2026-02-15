@@ -18,7 +18,7 @@ function NavigationBar() {
   return (
     <div>
       <aside className={cn(
-        "w-64 bg-gray-900",
+        "w-50 bg-gray-900",
         "border-r border-gray-800 flex flex-col pl-2 dark"
       )}>
         <nav className="flex-1 p-4">

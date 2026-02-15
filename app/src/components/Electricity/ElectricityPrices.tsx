@@ -1,8 +1,8 @@
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./card";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/card";
 import {backendUrl} from "../../config/config";
 import {HeatHarmonyClient} from "../../lib/heatHarmony/heatHarmonyClient";
 import {useCallback, useEffect, useMemo, useState} from "react";
-import {Separator} from "./separator";
+import {Separator} from "../ui/separator";
 import {PricesResponse} from "../../lib/heatHarmony/validation/pricesResponse";
 import {NightPeriod, TodayLowPricePeriodsResponse} from "../../lib/heatHarmony/validation/lowPricePeriods";
 
@@ -125,7 +125,7 @@ export default function ElectricityPrices() {
               <div className="space-y-1">
                 {(todayPrices?.prices ?? []).map((p, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{p.hour}:00</span>
+                    <span className="text-muted-foreground">{p.date}</span>
                     <span>{p.price}</span>
                   </div>
                 ))}
@@ -140,7 +140,7 @@ export default function ElectricityPrices() {
               <div className="space-y-1">
                 {(tomorrowPrices?.prices ?? []).map((p, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{p.hour}:00</span>
+                    <span className="text-muted-foreground">{p.date}</span>
                     <span>{p.price}</span>
                   </div>
                 ))}

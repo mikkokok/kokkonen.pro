@@ -164,7 +164,8 @@ function ElectricityConsumption() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      second: '2-digit'
     }),
     ...Object.fromEntries(
       validConsumptionKeys.map(key => {
@@ -183,6 +184,7 @@ function ElectricityConsumption() {
   const getChartFormatter = () => {
     return {
       domain: ['auto', 'auto'] as ['auto', 'auto'],
+      yAxisUnitLabel: 'W' as const,
       tickFormatter: undefined,
       tooltipFormatter: (value: number) => `${value.toFixed(2)}`
     };
@@ -231,14 +233,26 @@ function ElectricityConsumption() {
                 <XAxis
                   dataKey="timestamp"
                   className="text-xs"
-                  tick={{fill: 'hsl(var(--muted-foreground))'}}
+                  tick={{fill: '#fff'}}
+                  stroke="#fff"
+                  tickLine={{stroke: '#fff'}}
+                  axisLine={{stroke: '#fff'}}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{fill: 'hsl(var(--muted-foreground))'}}
+                  tick={{fill: '#fff'}}
+                  stroke="#fff"
+                  tickLine={{stroke: '#fff'}}
+                  axisLine={{stroke: '#fff'}}
+                  label={{
+                    value: formatter.yAxisUnitLabel,
+                    angle: -90,
+                    position: 'insideLeft',
+                    fill: '#fff',
+                  }}
                   domain={formatter.domain}
                   tickFormatter={formatter.tickFormatter}
                 />
