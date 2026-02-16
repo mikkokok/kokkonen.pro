@@ -30,7 +30,6 @@ export const msalConfig: Configuration = {
             console.error(message);
             return;
           case LogLevel.Info:
-            console.info(message);
             return;
           case LogLevel.Verbose:
             console.debug(message);
