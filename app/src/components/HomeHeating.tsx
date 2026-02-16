@@ -86,8 +86,6 @@ export function HomeHeating() {
     }
   }, [heatHarmonyClient]);
 
-  console.log('ouman status', oumanStatus);
-
   useEffect(() => {
     void fetchData();
     const interval = setInterval(() => {
@@ -203,6 +201,12 @@ export function HomeHeating() {
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
   };
 
+  const formatNumber = (value: number | null | undefined, digits?: number) => {
+    if (value === null || value === undefined) return '—';
+    if (digits === undefined) return String(value);
+    return value.toFixed(digits);
+  };
+
   const getUseWaterOverrideLabel = () => {
     if (!enableUseWaterHeaterData?.isOverrideActive) return 'No override';
     switch (enableUseWaterHeaterData.overrideMode) {
@@ -259,14 +263,12 @@ export function HomeHeating() {
           <CardDescription>Backend connectivity, workers, and scheduled tasks</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 md:grid-cols-2">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Ping serverTime:</span>
-              <span className="text-sm text-muted-foreground">{formatDateTime(heatAutomationPingStatus.serverTime)}</span>
+              <span className="text-sm font-medium">Backend serverTime: {formatDateTime(heatAutomationPingStatus.serverTime)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Automation serverTime:</span>
-              <span className="text-sm text-muted-foreground">{formatDateTime(heatAutomationStatus?.serverTime)}</span>
+              <span className="text-sm font-medium">HeatHarmony serverTime: {formatDateTime(heatAutomationStatus?.serverTime)}</span>
             </div>
           </div>
 
@@ -302,14 +304,10 @@ export function HomeHeating() {
               {renderErrors(heatAutomationTaskStatus?.setInsideTempBasedOnPrice.errors)}
             </div>
           </div>
-
-          <div className="text-xs text-muted-foreground">
-            Tasks serverTime: {formatDateTime(heatAutomationTaskStatus?.serverTime)}
-          </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Flow demand</CardTitle>
@@ -341,8 +339,44 @@ export function HomeHeating() {
           <CardContent>
             <div className="text-2xl font-bold">{heishamonLatest?.targetTemp}°C</div>
             <p className="text-xs text-muted-foreground">
-              In: {heishamonLatest?.inletTemp?.toFixed(1)}°C / Out: {heishamonLatest?.outletTemp?.toFixed(1)}°C
+              In: {heishamonLatest?.inletTemp}°C / Out: {heishamonLatest?.outletTemp}°C
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Heat Pump details</CardTitle>
+            <HugeiconsIcon icon={DropletIcon} className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Quiet mode</span>
+                <span className="text-xs font-medium">{formatNumber(heishamonLatest?.quietMode)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Pump flow</span>
+                <span className="text-xs font-medium">{formatNumber(heishamonLatest?.pumpFlow, 1)} l/min</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Compressor frequency</span>
+                <span className="text-xs font-medium">{formatNumber(heishamonLatest?.compressorFrequency, 0)} Hz</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Heat power production</span>
+                <span className="text-xs font-medium">{formatNumber(heishamonLatest?.heatEnergyProduction, 0)} W</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Heat power consumption</span>
+                <span className="text-xs font-medium">{formatNumber(heishamonLatest?.heatEnergyConsumption, 0)} W</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Pump error</span>
+                <span className="text-xs font-medium">{heishamonLatest?.pumpError ?? 'No error'}</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Updated: {formatDateTime(heishamonLatest?.serverTime)}</p>
           </CardContent>
         </Card>
       </div>
