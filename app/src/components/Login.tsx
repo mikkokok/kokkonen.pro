@@ -1,9 +1,15 @@
 import {useIsAuthenticated} from '@azure/msal-react';
 import {useMsal} from '@azure/msal-react';
 import {InteractionStatus} from '@azure/msal-browser';
-import {loginRequest} from '../lib/auth/msal';
+import {loginPopupRequest, loginRedirectRequest} from '../lib/auth/msal';
 import {Button} from "./ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
+
+function isLikelyMobileBrowser(): boolean {
+  const ua = navigator.userAgent ?? '';
+  const isIpadOs = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+  return /Android|iPhone|iPad|iPod/i.test(ua) || isIpadOs;
+}
 
 function Login() {
   const {instance, inProgress} = useMsal();
@@ -12,16 +18,29 @@ function Login() {
   const handleLogin = async () => {
     if (inProgress !== InteractionStatus.None) return;
     try {
-      const res = await instance.loginPopup(loginRequest);
-      instance.setActiveAccount(res.account);
+      if (isLikelyMobileBrowser()) {
+        await instance.loginRedirect(loginRedirectRequest);
+        return;
+      }
+
+      const res = await instance.loginPopup(loginPopupRequest);
+      if (res.account) {
+        instance.setActiveAccount(res.account);
+      }
     } catch (error) {
-      console.log('Login failed:', error);
+      console.log('Login popup failed, falling back to redirect:', error);
+      await instance.loginRedirect(loginRedirectRequest);
     }
   };
 
   const handleLogout = async () => {
     if (inProgress !== InteractionStatus.None) return;
     try {
+      if (isLikelyMobileBrowser()) {
+        await instance.logoutRedirect({postLogoutRedirectUri: window.location.origin});
+        return;
+      }
+
       await instance.logoutPopup({mainWindowRedirectUri: '/'});
       instance.setActiveAccount(null);
     } catch (error) {

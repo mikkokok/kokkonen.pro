@@ -6,6 +6,7 @@ import {Checkbox} from '../ui/checkbox';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 
 import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit, validConsumptionKeys} from "../../lib/electricity/validation/consumptionData";
+import {formatDateTimeFi} from '../../lib/dateTimeFormat';
 export function ElectricityDetails() {
   const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
   const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(
@@ -89,11 +90,9 @@ export function ElectricityDetails() {
   };
 
   const chartData = historyData?.map((record) => ({
-    timestamp: new Date(record.timestamp).toLocaleString('fi-FI', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    timestamp: formatDateTimeFi(record.timestamp, {
+      year: undefined,
+      second: undefined,
     }),
     ...Object.fromEntries(
       validConsumptionKeys.map(key => {

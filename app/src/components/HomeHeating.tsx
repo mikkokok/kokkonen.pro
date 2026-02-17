@@ -34,6 +34,7 @@ import {convertHarmonyChangeEnumToString} from '../lib/heatHarmony/validation/ha
 import {EMOverrideStatusResponse} from '../lib/heatHarmony/validation/eMOverrideStatusResponse';
 import {EMOverrideMode} from '../lib/heatHarmony/types/emOverrrideMode';
 import {EMLatestResponse} from '../lib/heatHarmony/validation/eMLatestResponse';
+import {formatDateTimeFi} from '../lib/dateTimeFormat';
 
 export function HomeHeating() {
   const [loading, setLoading] = useState(false);
@@ -195,11 +196,7 @@ export function HomeHeating() {
     }
   };
 
-  const formatDateTime = (value: string | undefined) => {
-    if (!value) return '—';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-  };
+  const formatDateTime = (value: string | undefined) => formatDateTimeFi(value);
 
   const formatNumber = (value: number | null | undefined, digits?: number) => {
     if (value === null || value === undefined) return '—';

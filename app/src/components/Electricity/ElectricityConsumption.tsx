@@ -17,6 +17,7 @@ import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsiv
 import {convertMQStatusEnumToString} from '../../lib/electricity/validation/mqResponse';
 import {useMsal} from '@azure/msal-react';
 import {InteractionStatus} from '@azure/msal-browser';
+import {formatDateTimeFi} from '../../lib/dateTimeFormat';
 
 const actualKeys: ConsumptionKeys[] = ['ActualConsumption', 'ActualReturndelivery'];
 const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
@@ -97,11 +98,11 @@ function ElectricityConsumption() {
       try {
         const status = await electricityClient.getMQStatus();
         setMqStatus(convertMQStatusEnumToString(status));
-        setMqStatusUpdatedAt(new Date().toLocaleString('fi-FI'));
+        setMqStatusUpdatedAt(formatDateTimeFi(new Date()));
       } catch (error) {
         console.log('Failed to fetch MQ status', error);
         setMqStatus(null);
-        setMqStatusUpdatedAt(new Date().toLocaleString('fi-FI'));
+        setMqStatusUpdatedAt(formatDateTimeFi(new Date()));
       }
     };
 
@@ -162,12 +163,9 @@ function ElectricityConsumption() {
   };
 
   const chartData = historyData?.map((record) => ({
-    timestamp: new Date(record.timestamp).toLocaleString('fi-FI', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+    timestamp: formatDateTimeFi(record.timestamp, {
+      year: undefined,
+      second: '2-digit',
     }),
     ...Object.fromEntries(
       validConsumptionKeys.map(key => {
@@ -314,7 +312,7 @@ function ElectricityConsumption() {
         <CardHeader>
           <CardTitle>Current Reading</CardTitle>
           <CardDescription>
-            Last updated: {latestConsumptionData?.timestamp || 'N/A'}
+            Last updated: {latestConsumptionData ? formatDateTimeFi(latestConsumptionData.timestamp) : 'N/A'}
           </CardDescription>
         </CardHeader>
         <CardContent>

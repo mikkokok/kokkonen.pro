@@ -5,6 +5,7 @@ import {useCallback, useEffect, useMemo, useState} from "react";
 import {Separator} from "../ui/separator";
 import {PricesResponse} from "../../lib/heatHarmony/validation/pricesResponse";
 import {NightPeriod, TodayLowPricePeriodsResponse} from "../../lib/heatHarmony/validation/lowPricePeriods";
+import {formatDateTimeFi} from "../../lib/dateTimeFormat";
 
 export default function ElectricityPrices() {
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
@@ -35,6 +36,14 @@ export default function ElectricityPrices() {
     void fetchData();
   }, [fetchData]);
 
+  const formatDateHour = (dateString: string, hour: number) => {
+    const base = new Date(dateString);
+    if (Number.isNaN(base.getTime())) return dateString;
+    const withHour = new Date(base);
+    withHour.setHours(hour, 0, 0, 0);
+    return formatDateTimeFi(withHour, {second: undefined});
+  };
+
 
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto dark">
@@ -54,10 +63,10 @@ export default function ElectricityPrices() {
             </div>
             <div className="grid gap-2 md:grid-cols-3">
               <div className="text-sm">
-                <span className="text-muted-foreground">Start:</span> {nightPeriod?.period?.start}
+                <span className="text-muted-foreground">Start:</span> {formatDateTimeFi(nightPeriod?.period?.start, {second: undefined})}
               </div>
               <div className="text-sm">
-                <span className="text-muted-foreground">End:</span> {nightPeriod?.period?.end}
+                <span className="text-muted-foreground">End:</span> {formatDateTimeFi(nightPeriod?.period?.end, {second: undefined})}
               </div>
               <div className="text-sm">
                 <span className="text-muted-foreground">Avg:</span> {nightPeriod?.period?.averagePrice ?? '—'}
@@ -75,10 +84,10 @@ export default function ElectricityPrices() {
               {(todayLowPricePeriods?.periods ?? []).map((p, idx) => (
                 <div key={idx} className="grid gap-2 md:grid-cols-3 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Start:</span> {p.start}
+                    <span className="text-muted-foreground">Start:</span> {formatDateTimeFi(p.start, {second: undefined})}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">End:</span> {p.end}
+                    <span className="text-muted-foreground">End:</span> {formatDateTimeFi(p.end, {second: undefined})}
                   </div>
                   <div>
                     <span className="text-muted-foreground">Avg:</span> {p.averagePrice ?? '—'}
@@ -102,10 +111,10 @@ export default function ElectricityPrices() {
                     <span className="text-muted-foreground">Rank:</span> {p.rank}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Start:</span> {p.start}
+                    <span className="text-muted-foreground">Start:</span> {formatDateTimeFi(p.start, {second: undefined})}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">End:</span> {p.end}
+                    <span className="text-muted-foreground">End:</span> {formatDateTimeFi(p.end, {second: undefined})}
                   </div>
                   <div>
                     <span className="text-muted-foreground">Avg:</span> {p.averagePrice ?? '—'}
@@ -125,7 +134,7 @@ export default function ElectricityPrices() {
               <div className="space-y-1">
                 {(todayPrices?.prices ?? []).map((p, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{p.date}</span>
+                    <span className="text-muted-foreground">{formatDateHour(p.date, p.hour)}</span>
                     <span>{p.price}</span>
                   </div>
                 ))}
@@ -140,7 +149,7 @@ export default function ElectricityPrices() {
               <div className="space-y-1">
                 {(tomorrowPrices?.prices ?? []).map((p, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{p.date}</span>
+                    <span className="text-muted-foreground">{formatDateHour(p.date, p.hour)}</span>
                     <span>{p.price}</span>
                   </div>
                 ))}
