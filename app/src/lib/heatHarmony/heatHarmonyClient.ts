@@ -76,6 +76,14 @@ export class HeatHarmonyClient {
         return heishamonLatestResponseSchema.parse(await response.json());
     }
 
+    public async getLatestHeishamonHistoryData(): Promise<HeishamonLatestResponse[]> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/heishamon/latestHistory`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return heishamonLatestResponseSchema.array().parse(await response.json());
+    }
+
     public async getHeishamonTaskStatus(): Promise<HeishamonTaskResponse> {
         const request = new Request(`${this.baseUrl}api/heatharmony/heishamon/task`, {
             method: 'GET',
