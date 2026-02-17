@@ -2,23 +2,18 @@ import {useEffect, useMemo, useState} from "react";
 import {backendUrl} from "../../config/config";
 import {ElectricityClient} from "../../lib/electricity/electricityClient";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/card";
-import {Checkbox} from '../ui/checkbox';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 
 import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit, validConsumptionKeys} from "../../lib/electricity/validation/consumptionData";
+import {formatDateTimeFi} from '../../lib/dateTimeFormat';
 export function ElectricityDetails() {
   const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
-  const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(
-    Object.fromEntries(validConsumptionKeys.map(key => [key, true]))
-  );
   const [historyData, setHistoryData] = useState<ConsumptionData[] | undefined>(undefined);
   const cumulativePowerConsumption: ConsumptionKeys[] = ['CumulativePowerConsumption'];
   const cumulativePowerYield: ConsumptionKeys[] = ['CumulativePowerYield'];
   const voltageKeys: ConsumptionKeys[] = ['L1Voltage', 'L2Voltage', 'L3Voltage'];
   const currentKeys: ConsumptionKeys[] = ['L1InstantPowerCurrent', 'L2InstantPowerCurrent', 'L3InstantPowerCurrent'];
-  const otherKeys: ConsumptionKeys[] = validConsumptionKeys.filter(
-    key => key !== 'CumulativePowerConsumption' && key !== 'CumulativePowerYield' && !voltageKeys.includes(key)
-  );
+  const powerKeys: ConsumptionKeys[] = ['L1InstantPowerUsage', 'L2InstantPowerUsage', 'L3InstantPowerUsage'];
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
 
   useEffect(() => {
@@ -43,6 +38,7 @@ export function ElectricityDetails() {
   const getChartFormatter = (keys: ConsumptionKeys[]) => {
     const isVoltageChart = keys.every(key => voltageKeys.includes(key));
     const isCurrentChart = keys.some(key => currentKeys.includes(key));
+    const isPowerChart = keys.some(key => powerKeys.includes(key));
     const isCumulativeChart = keys.some(key => key.includes('Cumulative'));
 
     const units = Array.from(new Set(keys.map(translateUnit)));
@@ -73,6 +69,14 @@ export function ElectricityDetails() {
         tooltipFormatter: (value: number) => `${value.toFixed(2)} kWh`
       };
     }
+    if (isPowerChart) {
+      return {
+        domain: ['auto', 'auto'] as ['auto', 'auto'],
+        yAxisUnitLabel: 'W' as const,
+        tickFormatter: (value: number) => `${value.toFixed(1)}`,
+        tooltipFormatter: (value: number) => `${value.toFixed(2)} W`
+      };
+    }
     return {
       domain: ['auto', 'auto'] as ['auto', 'auto'],
       yAxisUnitLabel: defaultUnit,
@@ -81,19 +85,10 @@ export function ElectricityDetails() {
     };
   };
 
-  const toggleLine = (key: ConsumptionKeys) => {
-    setVisibleLines(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
   const chartData = historyData?.map((record) => ({
-    timestamp: new Date(record.timestamp).toLocaleString('fi-FI', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    timestamp: formatDateTimeFi(record.timestamp, {
+      year: undefined,
+      second: undefined,
     }),
     ...Object.fromEntries(
       validConsumptionKeys.map(key => {
@@ -125,25 +120,6 @@ export function ElectricityDetails() {
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {showToggles && (
-            <div className="mb-4 flex flex-wrap gap-4">
-              {keys.map((key) => (
-                <div key={key} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`toggle-${key}`}
-                    checked={visibleLines[key]}
-                    onCheckedChange={() => toggleLine(key)}
-                  />
-                  <label
-                    htmlFor={`toggle-${key}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {translateKey(key)}
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
@@ -191,17 +167,16 @@ export function ElectricityDetails() {
                 />
                 <Legend wrapperStyle={{paddingTop: '20px'}} />
                 {keys.map((key, index) => (
-                  visibleLines[key] && (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={translateKey(key)}
-                      stroke={colors[index % colors.length]}
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{r: 4}}
-                    />
-                  )
+
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={translateKey(key)}
+                    stroke={colors[index % colors.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{r: 4}}
+                  />
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -212,8 +187,6 @@ export function ElectricityDetails() {
       </Card>
     );
   };
-
-
 
   return (
     <div className="p-6 space-y-6 w-full max-w-7xl mx-auto dark">
@@ -234,13 +207,18 @@ export function ElectricityDetails() {
       {renderChart(
         'Power Details',
         `Detailed power usage, current, and voltage per phase (${historyData?.length || 0} data points)`,
-        otherKeys,
+        powerKeys,
         true
       )}
       {renderChart(
         'Voltage Details',
         `Detailed voltage per phase (${historyData?.length || 0} data points)`,
         voltageKeys
+      )}
+      {renderChart(
+        'Current Details',
+        `Detailed current per phase (${historyData?.length || 0} data points)`,
+        currentKeys
       )}
     </div>
   );

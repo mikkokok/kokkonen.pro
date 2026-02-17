@@ -1,7 +1,7 @@
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './components/Home';
-import {HomeHeating} from './components/HomeHeating';
+import {HomeHeatingTabs} from './components/HomeHeatingTabs';
 import NavigationBar from './components/NavigationBar';
 import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
@@ -21,7 +21,7 @@ function App() {
             <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
             <Route path="/login" element={<Login />} />
             <Route path="/electricity" element={<RequireAuth><Electricity /></RequireAuth>} />
-            <Route path="/home-heating" element={<RequireAuth><HomeHeating /></RequireAuth>} />
+            <Route path="/home-heating" element={<RequireAuth><HomeHeatingTabs /></RequireAuth>} />
             <Route path="*" element={<RequireAuth><Home /></RequireAuth>} />
           </Routes>
         </div>

@@ -5,6 +5,7 @@ import {
   EventType,
   LogLevel,
   PopupRequest,
+  RedirectRequest,
   PublicClientApplication,
   SilentRequest,
 } from '@azure/msal-browser';
@@ -46,7 +47,11 @@ export const msalConfig: Configuration = {
 };
 
 
-export const loginRequest: PopupRequest = {
+export const loginPopupRequest: PopupRequest = {
+  scopes: apiScopes,
+};
+
+export const loginRedirectRequest: RedirectRequest = {
   scopes: apiScopes,
 };
 
