@@ -7,7 +7,7 @@ import {
   ConsumptionKeys,
   translateKey,
   translateUnit,
-  validConsumptionKeys
+  validConsumptionKeys,
 } from '../../lib/electricity/validation/consumptionData';
 import {ElectricityClient} from '../../lib/electricity/electricityClient';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/card';
@@ -17,7 +17,12 @@ import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsiv
 import {convertMQStatusEnumToString} from '../../lib/electricity/validation/mqResponse';
 import {useMsal} from '@azure/msal-react';
 import {InteractionStatus} from '@azure/msal-browser';
-import {formatDateTimeFi} from '../../lib/dateTimeFormat';
+import {formatDateTimeFi, formatTimeFi} from '../../lib/dateTimeFormat';
+import {
+  buildDownsampledTimeSeriesChartData,
+  createTimeAxisAndTooltipFormatters,
+  TimeSeriesChartPoint,
+} from '../../lib/charts/timeSeriesChart';
 
 const actualKeys: ConsumptionKeys[] = ['ActualConsumption', 'ActualReturndelivery'];
 const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
@@ -32,7 +37,7 @@ function ElectricityConsumption() {
   const [mqStatusUpdatedAt, setMqStatusUpdatedAt] = useState<string | null>(null);
 
   const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(
-    Object.fromEntries(validConsumptionKeys.map(key => [key, true]))
+    Object.fromEntries(validConsumptionKeys.map((key) => [key, true]))
   );
 
   const {accounts, inProgress} = useMsal();
@@ -125,8 +130,8 @@ function ElectricityConsumption() {
 
     const fetchHistoryData = async () => {
       try {
-        const historyData = await electricityClient.getHistoryData();
-        setHistoryData(historyData);
+        const fetchedHistoryData = await electricityClient.getHistoryData();
+        setHistoryData(fetchedHistoryData);
       } catch (error) {
         console.log('Failed to fetch history data', error);
       }
@@ -158,47 +163,65 @@ function ElectricityConsumption() {
   const getMqStatusVariant = () => {
     const s = mqStatus === null ? '' : String(mqStatus).toLowerCase();
     if (!s) return 'secondary';
-    if (s.includes('ok') || s.includes('healthy') || s.includes('connected') || s.includes('running') || s.includes('up')) return 'default';
+    if (s.includes('ok') || s.includes('healthy') || s.includes('connected') || s.includes('running') || s.includes('up'))
+      return 'default';
     return 'destructive';
   };
 
-  const chartData = historyData?.map((record) => ({
-    timestamp: formatDateTimeFi(record.timestamp, {
-      year: undefined,
-      second: '2-digit',
-    }),
-    ...Object.fromEntries(
-      validConsumptionKeys.map(key => {
-        const value = record.data[key];
-        if (value === undefined) {
-          return [translateKey(key), undefined];
-        }
-        if (key.includes('Current')) {
-          return [translateKey(key), value / 1000];
-        }
-        return [translateKey(key), value];
-      })
-    )
-  })) || [];
+  const actualChartData = useMemo(
+    () =>
+      buildDownsampledTimeSeriesChartData(historyData, actualKeys, {
+        keyToLabel: translateKey,
+        scaleValue: (key, rawValue) => (key.includes('Current') ? rawValue / 1000 : rawValue),
+      }),
+    [historyData]
+  );
 
-  const getChartFormatter = () => {
+  const getChartFormatter = (keys: ConsumptionKeys[]) => {
+    const unitLabel = keys.length > 0 ? translateUnit(keys[0]) : '';
+
     return {
       domain: ['auto', 'auto'] as ['auto', 'auto'],
-      yAxisUnitLabel: 'W' as const,
+      yAxisUnitLabel: unitLabel,
       tickFormatter: undefined,
-      tooltipFormatter: (value: number) => `${value.toFixed(2)}`
+      tooltipFormatter: (value: number) => `${value.toFixed(2)}`,
     };
   };
 
   const toggleLine = (key: ConsumptionKeys) => {
-    setVisibleLines(prev => ({
+    setVisibleLines((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
   };
 
-  const renderChart = (title: string, description: string, keys: ConsumptionKeys[], showToggles = false) => {
-    const formatter = getChartFormatter();
+  const renderChart = (
+    title: string,
+    description: string,
+    keys: ConsumptionKeys[],
+    chartData: TimeSeriesChartPoint[],
+    showToggles = false
+  ) => {
+    const formatter = getChartFormatter(keys);
+    const axisColor = '#fff';
+
+    const {formatXAxisTick, formatTooltipLabel} = createTimeAxisAndTooltipFormatters(chartData, {
+      formatDateShort: (ts) =>
+        formatDateTimeFi(ts, {
+          year: undefined,
+          hour: undefined,
+          minute: undefined,
+          second: undefined,
+        }),
+      formatDateFull: (ts) =>
+        formatDateTimeFi(ts, {
+          hour: undefined,
+          minute: undefined,
+          second: undefined,
+        }),
+      formatTimeShort: (ts) => formatTimeFi(ts),
+      formatTimeWithSeconds: (ts) => formatTimeFi(ts, {second: '2-digit'}),
+    });
 
     return (
       <Card>
@@ -228,30 +251,35 @@ function ElectricityConsumption() {
           )}
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={{top: 10, right: 12, left: 0, bottom: 24}}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
-                  dataKey="timestamp"
+                  dataKey="ts"
+                  type="number"
+                  scale="time"
+                  domain={['dataMin', 'dataMax']}
                   className="text-xs"
-                  tick={{fill: '#fff'}}
-                  stroke="#fff"
-                  tickLine={{stroke: '#fff'}}
-                  axisLine={{stroke: '#fff'}}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  tick={{fill: axisColor}}
+                  stroke={axisColor}
+                  tickLine={{stroke: axisColor}}
+                  axisLine={{stroke: axisColor}}
+                  tickFormatter={formatXAxisTick}
+                  interval="preserveStartEnd"
+                  minTickGap={40}
+                  tickMargin={10}
+                  height={55}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{fill: '#fff'}}
-                  stroke="#fff"
-                  tickLine={{stroke: '#fff'}}
-                  axisLine={{stroke: '#fff'}}
+                  tick={{fill: axisColor}}
+                  stroke={axisColor}
+                  tickLine={{stroke: axisColor}}
+                  axisLine={{stroke: axisColor}}
                   label={{
                     value: formatter.yAxisUnitLabel,
                     angle: -90,
                     position: 'insideLeft',
-                    fill: '#fff',
+                    fill: axisColor,
                   }}
                   domain={formatter.domain}
                   tickFormatter={formatter.tickFormatter}
@@ -260,16 +288,17 @@ function ElectricityConsumption() {
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '0.5rem'
+                    borderRadius: '0.5rem',
                   }}
                   labelStyle={{color: 'hsl(var(--foreground))'}}
                   formatter={(value: number | undefined) =>
                     value !== undefined ? formatter.tooltipFormatter(value) : 'N/A'
                   }
+                  labelFormatter={formatTooltipLabel}
                 />
                 <Legend wrapperStyle={{paddingTop: '20px'}} />
-                {keys.map((key, index) => (
-                  visibleLines[key] && (
+                {keys.map((key, index) =>
+                  visibleLines[key] ? (
                     <Line
                       key={key}
                       type="monotone"
@@ -278,9 +307,10 @@ function ElectricityConsumption() {
                       strokeWidth={2}
                       dot={false}
                       activeDot={{r: 4}}
+                      isAnimationActive={false}
                     />
-                  )
-                ))}
+                  ) : null
+                )}
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -319,7 +349,10 @@ function ElectricityConsumption() {
           {latestConsumptionData ? (
             <div className="space-y-3">
               {validConsumptionKeys.map((key) => (
-                <div key={key} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div
+                  key={key}
+                  className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                >
                   <span className="text-sm font-medium">{translateKey(key)}</span>
                   <span className="text-sm text-muted-foreground">
                     {latestConsumptionData.data[key]} {translateUnit(key)}
@@ -336,7 +369,8 @@ function ElectricityConsumption() {
       {renderChart(
         'Actual Consumption & Return Delivery',
         `Current power usage and return delivery (${historyData?.length || 0} data points)`,
-        actualKeys
+        actualKeys,
+        actualChartData
       )}
     </div>
   );

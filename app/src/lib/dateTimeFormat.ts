@@ -30,6 +30,26 @@ export function formatDateTimeFi(
   return formatter.format(date);
 }
 
+export function formatTimeFi(
+  value: DateLike | null | undefined,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (value === null || value === undefined || value === '') return '—';
+
+  const date = toDate(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  const formatter = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+    timeZone: DEFAULT_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    ...options,
+  });
+
+  return formatter.format(date);
+}
+
 export function formatDateFi(value: DateLike | null | undefined): string {
   if (value === null || value === undefined || value === '') return '—';
   const date = toDate(value);
