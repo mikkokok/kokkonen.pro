@@ -4,17 +4,32 @@ import {ElectricityClient} from "../../lib/electricity/electricityClient";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/card";
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 
-import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit, validConsumptionKeys} from "../../lib/electricity/validation/consumptionData";
-import {formatDateTimeFi} from '../../lib/dateTimeFormat';
+import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit} from "../../lib/electricity/validation/consumptionData";
+import {formatDateTimeFi, formatTimeFi} from '../../lib/dateTimeFormat';
+import {
+  buildDownsampledTimeSeriesChartData,
+  createTimeAxisAndTooltipFormatters,
+  TimeSeriesChartPoint,
+} from '../../lib/charts/timeSeriesChart';
+
+const cumulativePowerConsumptionKeys: ConsumptionKeys[] = ['CumulativePowerConsumption'];
+const cumulativePowerYieldKeys: ConsumptionKeys[] = ['CumulativePowerYield'];
+const voltageKeys: ConsumptionKeys[] = ['L1Voltage', 'L2Voltage', 'L3Voltage'];
+const currentKeys: ConsumptionKeys[] = ['L1InstantPowerCurrent', 'L2InstantPowerCurrent', 'L3InstantPowerCurrent'];
+const powerKeys: ConsumptionKeys[] = ['L1InstantPowerUsage', 'L2InstantPowerUsage', 'L3InstantPowerUsage'];
+
+const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
+
+function scaleValue(key: ConsumptionKeys, rawValue: number): number {
+  if (voltageKeys.includes(key)) return rawValue / 1000;
+  if (key.includes('Current')) return rawValue / 1000;
+  if (key.includes('Cumulative')) return rawValue / 1000;
+  return rawValue;
+}
+
 export function ElectricityDetails() {
   const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
   const [historyData, setHistoryData] = useState<ConsumptionData[] | undefined>(undefined);
-  const cumulativePowerConsumption: ConsumptionKeys[] = ['CumulativePowerConsumption'];
-  const cumulativePowerYield: ConsumptionKeys[] = ['CumulativePowerYield'];
-  const voltageKeys: ConsumptionKeys[] = ['L1Voltage', 'L2Voltage', 'L3Voltage'];
-  const currentKeys: ConsumptionKeys[] = ['L1InstantPowerCurrent', 'L2InstantPowerCurrent', 'L3InstantPowerCurrent'];
-  const powerKeys: ConsumptionKeys[] = ['L1InstantPowerUsage', 'L2InstantPowerUsage', 'L3InstantPowerUsage'];
-  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
 
   useEffect(() => {
     const fetchHistoryData = async () => {
@@ -85,33 +100,73 @@ export function ElectricityDetails() {
     };
   };
 
-  const chartData = historyData?.map((record) => ({
-    timestamp: formatDateTimeFi(record.timestamp, {
-      year: undefined,
-      second: undefined,
-    }),
-    ...Object.fromEntries(
-      validConsumptionKeys.map(key => {
-        const value = record.data[key];
-        if (value === undefined) {
-          return [translateKey(key), undefined];
-        }
-        if (voltageKeys.includes(key)) {
-          return [translateKey(key), value / 1000];
-        }
-        if (key.includes('Current')) {
-          return [translateKey(key), value / 1000];
-        }
-        if (key.includes('Cumulative')) {
-          return [translateKey(key), value / 1000];
-        }
-        return [translateKey(key), value];
-      })
-    )
-  })) || [];
+  const cumulativeConsumptionChartData = useMemo(
+    () =>
+      buildDownsampledTimeSeriesChartData(historyData, cumulativePowerConsumptionKeys, {
+        keyToLabel: translateKey,
+        scaleValue,
+      }),
+    [historyData]
+  );
+  const cumulativeYieldChartData = useMemo(
+    () =>
+      buildDownsampledTimeSeriesChartData(historyData, cumulativePowerYieldKeys, {
+        keyToLabel: translateKey,
+        scaleValue,
+      }),
+    [historyData]
+  );
+  const powerChartData = useMemo(
+    () =>
+      buildDownsampledTimeSeriesChartData(historyData, powerKeys, {
+        keyToLabel: translateKey,
+        scaleValue,
+      }),
+    [historyData]
+  );
+  const voltageChartData = useMemo(
+    () =>
+      buildDownsampledTimeSeriesChartData(historyData, voltageKeys, {
+        keyToLabel: translateKey,
+        scaleValue,
+      }),
+    [historyData]
+  );
+  const currentChartData = useMemo(
+    () =>
+      buildDownsampledTimeSeriesChartData(historyData, currentKeys, {
+        keyToLabel: translateKey,
+        scaleValue,
+      }),
+    [historyData]
+  );
 
-  const renderChart = (title: string, description: string, keys: ConsumptionKeys[], showToggles = false) => {
+  const renderChart = (
+    title: string,
+    description: string,
+    keys: ConsumptionKeys[],
+    chartData: TimeSeriesChartPoint[],
+  ) => {
     const formatter = getChartFormatter(keys);
+    const axisColor = '#fff';
+
+    const {formatXAxisTick, formatTooltipLabel} = createTimeAxisAndTooltipFormatters(chartData, {
+      formatDateShort: (ts) =>
+        formatDateTimeFi(ts, {
+          year: undefined,
+          hour: undefined,
+          minute: undefined,
+          second: undefined,
+        }),
+      formatDateFull: (ts) =>
+        formatDateTimeFi(ts, {
+          hour: undefined,
+          minute: undefined,
+          second: undefined,
+        }),
+      formatTimeShort: (ts) => formatTimeFi(ts),
+      formatTimeWithSeconds: (ts) => formatTimeFi(ts, {second: '2-digit'}),
+    });
 
     return (
       <Card>
@@ -122,32 +177,37 @@ export function ElectricityDetails() {
         <CardContent>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={{top: 10, right: 12, left: 0, bottom: 24}}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
-                  dataKey="timestamp"
+                  dataKey="ts"
+                  type="number"
+                  scale="time"
+                  domain={['dataMin', 'dataMax']}
                   className="text-xs"
-                  tick={{fill: '#fff'}}
-                  stroke="#fff"
-                  tickLine={{stroke: '#fff'}}
-                  axisLine={{stroke: '#fff'}}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  tick={{fill: axisColor}}
+                  stroke={axisColor}
+                  tickLine={{stroke: axisColor}}
+                  axisLine={{stroke: axisColor}}
+                  tickFormatter={formatXAxisTick}
+                  interval="preserveStartEnd"
+                  minTickGap={40}
+                  tickMargin={10}
+                  height={55}
                 />
                 <YAxis
                   className="text-xs"
-                  tick={{fill: '#fff'}}
-                  stroke="#fff"
-                  tickLine={{stroke: '#fff'}}
-                  axisLine={{stroke: '#fff'}}
+                  tick={{fill: axisColor}}
+                  stroke={axisColor}
+                  tickLine={{stroke: axisColor}}
+                  axisLine={{stroke: axisColor}}
                   label={
                     formatter.yAxisUnitLabel
                       ? {
                         value: formatter.yAxisUnitLabel,
                         angle: -90,
                         position: 'insideLeft',
-                        fill: '#fff',
+                        fill: axisColor,
                       }
                       : undefined
                   }
@@ -164,6 +224,7 @@ export function ElectricityDetails() {
                   formatter={(value: number | undefined) =>
                     value !== undefined ? formatter.tooltipFormatter(value) : 'N/A'
                   }
+                  labelFormatter={formatTooltipLabel}
                 />
                 <Legend wrapperStyle={{paddingTop: '20px'}} />
                 {keys.map((key, index) => (
@@ -176,6 +237,7 @@ export function ElectricityDetails() {
                     strokeWidth={2}
                     dot={false}
                     activeDot={{r: 4}}
+                    isAnimationActive={false}
                   />
                 ))}
               </LineChart>
@@ -197,28 +259,32 @@ export function ElectricityDetails() {
       {renderChart(
         'Cumulative Power Consumption',
         `Total energy consumption over time (${historyData?.length || 0} data points)`,
-        cumulativePowerConsumption
+        cumulativePowerConsumptionKeys,
+        cumulativeConsumptionChartData
       )}
       {renderChart(
         'Cumulative Power Yield',
         `Total energy yield over time (${historyData?.length || 0} data points)`,
-        cumulativePowerYield
+        cumulativePowerYieldKeys,
+        cumulativeYieldChartData
       )}
       {renderChart(
         'Power Details',
         `Detailed power usage, current, and voltage per phase (${historyData?.length || 0} data points)`,
         powerKeys,
-        true
+        powerChartData
       )}
       {renderChart(
         'Voltage Details',
         `Detailed voltage per phase (${historyData?.length || 0} data points)`,
-        voltageKeys
+        voltageKeys,
+        voltageChartData
       )}
       {renderChart(
         'Current Details',
         `Detailed current per phase (${historyData?.length || 0} data points)`,
-        currentKeys
+        currentKeys,
+        currentChartData
       )}
     </div>
   );
