@@ -15,6 +15,13 @@ export default function ElectricityPrices() {
   const [todayLowPricePeriods, setTodayLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
   const [allLowPricePeriods, setAllLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
 
+  const formatPrice = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return '—';
+    const parsed = typeof value === 'number' ? value : Number.parseFloat(value);
+    if (Number.isNaN(parsed)) return String(value);
+    return parsed.toFixed(3);
+  };
+
   const fetchData = useCallback(async () => {
     try {
       const todayElectricityPrices = await heatHarmonyClient.getTodayElectricityPrices();
@@ -40,7 +47,7 @@ export default function ElectricityPrices() {
     const base = new Date(dateString);
     if (Number.isNaN(base.getTime())) return dateString;
     const withHour = new Date(base);
-    withHour.setHours(hour, 0, 0, 0);
+    withHour.setHours(hour, base.getMinutes(), 0, 0);
     return formatDateTimeFi(withHour, {second: undefined});
   };
 
@@ -69,7 +76,7 @@ export default function ElectricityPrices() {
                 <span className="text-muted-foreground">End:</span> {formatDateTimeFi(nightPeriod?.period?.end, {second: undefined})}
               </div>
               <div className="text-sm">
-                <span className="text-muted-foreground">Avg:</span> {nightPeriod?.period?.averagePrice ?? '—'}
+                <span className="text-muted-foreground">Avg:</span> {formatPrice(nightPeriod?.period?.averagePrice)}
               </div>
             </div>
           </div>
@@ -81,8 +88,8 @@ export default function ElectricityPrices() {
               <span className="text-sm font-medium">Today's low price periods</span>
             </div>
             <div className="space-y-1">
-              {(todayLowPricePeriods?.periods ?? []).map((p, idx) => (
-                <div key={idx} className="grid gap-2 md:grid-cols-3 text-sm">
+              {(todayLowPricePeriods?.periods ?? []).map((p) => (
+                <div key={`${p.start}-${p.end}-${p.rank}`} className="grid gap-2 md:grid-cols-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">Start:</span> {formatDateTimeFi(p.start, {second: undefined})}
                   </div>
@@ -90,7 +97,7 @@ export default function ElectricityPrices() {
                     <span className="text-muted-foreground">End:</span> {formatDateTimeFi(p.end, {second: undefined})}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Avg:</span> {p.averagePrice ?? '—'}
+                    <span className="text-muted-foreground">Avg:</span> {formatPrice(p.averagePrice)}
                   </div>
                 </div>
               ))}
@@ -105,8 +112,8 @@ export default function ElectricityPrices() {
               <span className="text-xs text-muted-foreground">{allLowPricePeriods?.periods.length ?? 0} rows</span>
             </div>
             <div className="space-y-1">
-              {(allLowPricePeriods?.periods ?? []).map((p, idx) => (
-                <div key={idx} className="grid gap-2 md:grid-cols-4 text-sm">
+              {(allLowPricePeriods?.periods ?? []).map((p) => (
+                <div key={`${p.start}-${p.end}-${p.rank}`} className="grid gap-2 md:grid-cols-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Rank:</span> {p.rank}
                   </div>
@@ -117,7 +124,7 @@ export default function ElectricityPrices() {
                     <span className="text-muted-foreground">End:</span> {formatDateTimeFi(p.end, {second: undefined})}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Avg:</span> {p.averagePrice ?? '—'}
+                    <span className="text-muted-foreground">Avg:</span> {formatPrice(p.averagePrice)}
                   </div>
                 </div>
               ))}
@@ -132,10 +139,10 @@ export default function ElectricityPrices() {
                 <span className="text-xs text-muted-foreground">{todayPrices?.prices?.length ?? 0} rows</span>
               </div>
               <div className="space-y-1">
-                {(todayPrices?.prices ?? []).map((p, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-sm">
+                {(todayPrices?.prices ?? []).map((p) => (
+                  <div key={`${p.date}-${p.hour}`} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{formatDateHour(p.date, p.hour)}</span>
-                    <span>{p.price}</span>
+                    <span>{formatPrice(p.price)}</span>
                   </div>
                 ))}
               </div>
@@ -147,10 +154,10 @@ export default function ElectricityPrices() {
                 <span className="text-xs text-muted-foreground">{tomorrowPrices?.prices?.length ?? 0} rows</span>
               </div>
               <div className="space-y-1">
-                {(tomorrowPrices?.prices ?? []).map((p, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-sm">
+                {(tomorrowPrices?.prices ?? []).map((p) => (
+                  <div key={`${p.date}-${p.hour}`} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{formatDateHour(p.date, p.hour)}</span>
-                    <span>{p.price}</span>
+                    <span>{formatPrice(p.price)}</span>
                   </div>
                 ))}
               </div>
