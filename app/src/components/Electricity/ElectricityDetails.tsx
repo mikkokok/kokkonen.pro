@@ -5,6 +5,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/c
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 
 import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit} from "../../lib/electricity/validation/consumptionData";
+import {scaleConsumptionValue} from '../../lib/electricity/consumptionDisplay';
 import {formatDateTimeFi, formatTimeFi} from '../../lib/dateTimeFormat';
 import {
   buildDownsampledTimeSeriesChartData,
@@ -21,10 +22,7 @@ const powerKeys: ConsumptionKeys[] = ['L1InstantPowerUsage', 'L2InstantPowerUsag
 const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d884d8', '#ca9d82', '#58c6ff'];
 
 function scaleValue(key: ConsumptionKeys, rawValue: number): number {
-  if (voltageKeys.includes(key)) return rawValue / 1000;
-  if (key.includes('Current')) return rawValue / 1000;
-  if (key.includes('Cumulative')) return rawValue / 1000;
-  return rawValue;
+  return scaleConsumptionValue(key, rawValue);
 }
 
 export function ElectricityDetails() {

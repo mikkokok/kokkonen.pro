@@ -65,23 +65,68 @@ export function HomeHeating() {
 
   const fetchData = useCallback(async () => {
     try {
-      await Promise.all([
-        heatHarmonyClient.getPingStatus().then(setHeatAutomationPingStatus),
-        heatHarmonyClient.getHeatAutomationStatus().then(setHeatAutomationStatus),
-        heatHarmonyClient.getHeatAutomationTaskStatus().then(setHeatAutomationTaskStatus),
-        heatHarmonyClient.getOverrideStatus().then(setOverrideStatus),
-        heatHarmonyClient.getOumanLatestData().then(setOumanLatest),
-        heatHarmonyClient.getOumanStatus().then(setOumanStatus),
-        heatHarmonyClient.getOumanTaskStatus().then(setOumanTaskStatus),
-        heatHarmonyClient.getLatestHeishamonData().then(setHeishamonLatest),
-        heatHarmonyClient.getHeishamonStatus().then(setHeishamonStatus),
-        heatHarmonyClient.getHeishamonTaskStatus().then(setHeishamonTaskStatus),
-        heatHarmonyClient.getTrvLatestData().then(setTrvLatest),
-        heatHarmonyClient.getTrvTaskStatus().then(setTrvTaskStatus),
-        heatHarmonyClient.getOilburnerLatestData().then(setOilburnerLatest),
-        heatHarmonyClient.getUseWaterHeaterLatest().then(setUseWaterHeaterLatest),
-        heatHarmonyClient.getUseWaterHeaterOverrideStatus().then(setEnableUseWaterHeaterData),
-      ].map((p) => p.catch((error) => console.warn('HeatHarmony fetch failed:', error))));
+      const safe = async <T,>(label: string, request: Promise<T>): Promise<T | undefined> => {
+        try {
+          return await request;
+        } catch (error) {
+          console.warn(`HeatHarmony fetch failed (${label}):`, error);
+          return undefined;
+        }
+      };
+
+      const [
+        ping,
+        automationStatus,
+        automationTaskStatus,
+        automationOverrideStatus,
+        oumanLatestData,
+        oumanStatusData,
+        oumanTaskStatusData,
+        heishamonLatestData,
+        heishamonStatusData,
+        heishamonTaskStatusData,
+        trvLatestData,
+        trvTaskStatusData,
+        oilburnerLatestData,
+        useWaterHeaterLatestData,
+        useWaterHeaterOverrideStatus,
+      ] = await Promise.all([
+        safe('ping', heatHarmonyClient.getPingStatus()),
+        safe('heatAutomationStatus', heatHarmonyClient.getHeatAutomationStatus()),
+        safe('heatAutomationTaskStatus', heatHarmonyClient.getHeatAutomationTaskStatus()),
+        safe('overrideStatus', heatHarmonyClient.getOverrideStatus()),
+        safe('oumanLatest', heatHarmonyClient.getOumanLatestData()),
+        safe('oumanStatus', heatHarmonyClient.getOumanStatus()),
+        safe('oumanTaskStatus', heatHarmonyClient.getOumanTaskStatus()),
+        safe('heishamonLatest', heatHarmonyClient.getLatestHeishamonData()),
+        safe('heishamonStatus', heatHarmonyClient.getHeishamonStatus()),
+        safe('heishamonTaskStatus', heatHarmonyClient.getHeishamonTaskStatus()),
+        safe('trvLatest', heatHarmonyClient.getTrvLatestData()),
+        safe('trvTaskStatus', heatHarmonyClient.getTrvTaskStatus()),
+        safe('oilburnerLatest', heatHarmonyClient.getOilburnerLatestData()),
+        safe('useWaterHeaterLatest', heatHarmonyClient.getUseWaterHeaterLatest()),
+        safe('useWaterHeaterOverrideStatus', heatHarmonyClient.getUseWaterHeaterOverrideStatus()),
+      ]);
+
+      if (ping) setHeatAutomationPingStatus(ping);
+      if (automationStatus) setHeatAutomationStatus(automationStatus);
+      if (automationTaskStatus) setHeatAutomationTaskStatus(automationTaskStatus);
+      if (automationOverrideStatus) setOverrideStatus(automationOverrideStatus);
+
+      if (oumanLatestData) setOumanLatest(oumanLatestData);
+      if (oumanStatusData) setOumanStatus(oumanStatusData);
+      if (oumanTaskStatusData) setOumanTaskStatus(oumanTaskStatusData);
+
+      if (heishamonLatestData) setHeishamonLatest(heishamonLatestData);
+      if (heishamonStatusData) setHeishamonStatus(heishamonStatusData);
+      if (heishamonTaskStatusData) setHeishamonTaskStatus(heishamonTaskStatusData);
+
+      if (trvLatestData) setTrvLatest(trvLatestData);
+      if (trvTaskStatusData) setTrvTaskStatus(trvTaskStatusData);
+
+      if (oilburnerLatestData) setOilburnerLatest(oilburnerLatestData);
+      if (useWaterHeaterLatestData) setUseWaterHeaterLatest(useWaterHeaterLatestData);
+      if (useWaterHeaterOverrideStatus) setEnableUseWaterHeaterData(useWaterHeaterOverrideStatus);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -198,6 +243,27 @@ export function HomeHeating() {
 
   const formatDateTime = (value: string | undefined) => formatDateTimeFi(value);
 
+  const isPingOk = (heatAutomationPingStatus.status ?? '').toLowerCase() === 'ok';
+
+  const sortChangesByTimeDesc = useCallback(<T extends {time?: string}>(changes: T[]) => {
+    const toMs = (value: string | undefined) => {
+      if (!value) return Number.NEGATIVE_INFINITY;
+      const ms = new Date(value).getTime();
+      return Number.isNaN(ms) ? Number.NEGATIVE_INFINITY : ms;
+    };
+    return [...changes].sort((a, b) => toMs(b.time) - toMs(a.time));
+  }, []);
+
+  const oumanRecentChanges = useMemo(
+    () => sortChangesByTimeDesc(oumanStatus?.changes ?? []).slice(0, 5),
+    [oumanStatus?.changes, sortChangesByTimeDesc]
+  );
+
+  const heishamonRecentChanges = useMemo(
+    () => sortChangesByTimeDesc(heishamonStatus?.changes ?? []).slice(0, 5),
+    [heishamonStatus?.changes, sortChangesByTimeDesc]
+  );
+
   const formatNumber = (value: number | null | undefined, digits?: number) => {
     if (value === null || value === undefined) return '—';
     if (digits === undefined) return String(value);
@@ -237,8 +303,8 @@ export function HomeHeating() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Home Heating Control</h1>
         <div className="flex items-center gap-2">
-          <Badge variant={heatAutomationPingStatus.status ? 'default' : 'destructive'}>
-            Ping: {heatAutomationPingStatus.status ? 'Ok' : 'No response'}
+          <Badge variant={isPingOk ? 'default' : 'destructive'}>
+            Ping: {isPingOk ? 'Ok' : heatAutomationPingStatus.status ?? 'No response'}
           </Badge>
           {heatAutomationStatus?.isWorkerRunning ? (
             <Badge variant="default" className="gap-1">
@@ -503,8 +569,8 @@ export function HomeHeating() {
                   <span className="text-xs text-muted-foreground">serverTime: {formatDateTime(oumanStatus?.serverTime)}</span>
                 </div>
                 <div className="rounded-lg border p-3 space-y-2">
-                  {(oumanStatus?.changes ?? []).slice(0, 5).map((c, idx) => (
-                    <div key={idx} className="text-sm">
+                  {oumanRecentChanges.map((c) => (
+                    <div key={`${c.time}-${c.changeType}`} className="text-sm">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{convertHarmonyChangeEnumToString(c.changeType)}</span>
                         <span className="text-xs text-muted-foreground">{formatDateTime(c.time)}</span>
@@ -524,8 +590,8 @@ export function HomeHeating() {
                   <span className="text-xs text-muted-foreground">changes: {heishamonStatus?.changes?.length ?? 0}</span>
                 </div>
                 <div className="rounded-lg border p-3 space-y-2">
-                  {(heishamonStatus?.changes ?? []).slice(0, 5).map((c, idx) => (
-                    <div key={idx} className="text-sm">
+                  {heishamonRecentChanges.map((c) => (
+                    <div key={`${c.time}-${c.changeType}`} className="text-sm">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{convertHarmonyChangeEnumToString(c.changeType)}</span>
                         <span className="text-xs text-muted-foreground">{formatDateTime(c.time)}</span>

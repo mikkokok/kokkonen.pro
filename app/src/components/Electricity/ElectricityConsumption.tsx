@@ -9,6 +9,7 @@ import {
   translateUnit,
   validConsumptionKeys,
 } from '../../lib/electricity/validation/consumptionData';
+import {formatConsumptionReading, scaleConsumptionValue} from '../../lib/electricity/consumptionDisplay';
 import {ElectricityClient} from '../../lib/electricity/electricityClient';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/card';
 import {Badge} from '../ui/badge';
@@ -17,7 +18,8 @@ import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsiv
 import {convertMQStatusEnumToString} from '../../lib/electricity/validation/mqResponse';
 import {useMsal} from '@azure/msal-react';
 import {InteractionStatus} from '@azure/msal-browser';
-import {formatDateTimeFi, formatTimeFi} from '../../lib/dateTimeFormat';
+import {formatDateFi, formatDateTimeFi, formatTimeFi} from '../../lib/dateTimeFormat';
+import {devLog} from '../../lib/logger';
 import {
   buildDownsampledTimeSeriesChartData,
   createTimeAxisAndTooltipFormatters,
@@ -66,17 +68,17 @@ function ElectricityConsumption() {
               const validatedData = consumptionDataSchema.parse(data);
               setLatestConsumptionData(validatedData);
             } catch (error) {
-              console.log('error in validation', error);
+              devLog('error in validation', error);
               setLatestConsumptionData(null);
             }
           });
 
           await hubConnection.start();
-          console.log('hubConnection started');
+          devLog('hubConnection started');
           setConnectionStatus(`Connected to ${connectionUrl}`);
           connection.current = hubConnection;
         } catch (error) {
-          console.log('hubConnection failed', error);
+          devLog('hubConnection failed', error);
           setConnectionStatus(`Connection failed to ${connectionUrl}, due to ${error}`);
         }
       };
@@ -105,7 +107,7 @@ function ElectricityConsumption() {
         setMqStatus(convertMQStatusEnumToString(status));
         setMqStatusUpdatedAt(formatDateTimeFi(new Date()));
       } catch (error) {
-        console.log('Failed to fetch MQ status', error);
+        devLog('Failed to fetch MQ status', error);
         setMqStatus(null);
         setMqStatusUpdatedAt(formatDateTimeFi(new Date()));
       }
@@ -133,7 +135,7 @@ function ElectricityConsumption() {
         const fetchedHistoryData = await electricityClient.getHistoryData();
         setHistoryData(fetchedHistoryData);
       } catch (error) {
-        console.log('Failed to fetch history data', error);
+        devLog('Failed to fetch history data', error);
       }
     };
 
@@ -172,10 +174,70 @@ function ElectricityConsumption() {
     () =>
       buildDownsampledTimeSeriesChartData(historyData, actualKeys, {
         keyToLabel: translateKey,
-        scaleValue: (key, rawValue) => (key.includes('Current') ? rawValue / 1000 : rawValue),
+        scaleValue: scaleConsumptionValue,
       }),
     [historyData]
   );
+
+  const dailyTotals = useMemo(() => {
+    if (!historyData || historyData.length === 0) return [];
+
+    const sorted = [...historyData].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const perDay = new Map<
+      string,
+      {
+        sortTs: number;
+        firstConsumptionWh: number;
+        lastConsumptionWh: number;
+        firstYieldWh: number;
+        lastYieldWh: number;
+      }
+    >();
+
+    for (const point of sorted) {
+      const ts = new Date(point.timestamp);
+      if (Number.isNaN(ts.getTime())) continue;
+
+      const dayKey = formatDateFi(ts);
+      if (!dayKey || dayKey === '—') continue;
+
+      const cumulativeConsumptionWh = point.data.CumulativePowerConsumption;
+      const cumulativeYieldWh = point.data.CumulativePowerYield;
+      if (cumulativeConsumptionWh === undefined || cumulativeYieldWh === undefined) continue;
+
+      const existing = perDay.get(dayKey);
+      if (!existing) {
+        perDay.set(dayKey, {
+          sortTs: ts.getTime(),
+          firstConsumptionWh: cumulativeConsumptionWh,
+          lastConsumptionWh: cumulativeConsumptionWh,
+          firstYieldWh: cumulativeYieldWh,
+          lastYieldWh: cumulativeYieldWh,
+        });
+        continue;
+      }
+
+      existing.lastConsumptionWh = cumulativeConsumptionWh;
+      existing.lastYieldWh = cumulativeYieldWh;
+    }
+
+    return Array.from(perDay.entries())
+      .map(([date, v]) => {
+        const usedWh = Math.max(0, v.lastConsumptionWh - v.firstConsumptionWh);
+        const yieldWh = Math.max(0, v.lastYieldWh - v.firstYieldWh);
+
+        return {
+          date,
+          sortTs: v.sortTs,
+          usedKWh: scaleConsumptionValue('CumulativePowerConsumption', usedWh),
+          yieldKWh: scaleConsumptionValue('CumulativePowerYield', yieldWh),
+        };
+      })
+      .sort((a, b) => b.sortTs - a.sortTs);
+  }, [historyData]);
 
   const getChartFormatter = (keys: ConsumptionKeys[]) => {
     const unitLabel = keys.length > 0 ? translateUnit(keys[0]) : '';
@@ -355,13 +417,52 @@ function ElectricityConsumption() {
                 >
                   <span className="text-sm font-medium">{translateKey(key)}</span>
                   <span className="text-sm text-muted-foreground">
-                    {latestConsumptionData.data[key]} {translateUnit(key)}
+                    {formatConsumptionReading(key, latestConsumptionData.data[key])}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Waiting for data...</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Daily energy totals</CardTitle>
+          <CardDescription>Energy used and yielded per day (kWh), calculated from cumulative counters</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {dailyTotals.length > 0 ? (
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th scope="col" className="text-left font-medium py-2 pr-4 whitespace-nowrap">
+                      Date
+                    </th>
+                    <th scope="col" className="text-right font-medium py-2 pr-4 whitespace-nowrap">
+                      Used (kWh)
+                    </th>
+                    <th scope="col" className="text-right font-medium py-2 whitespace-nowrap">
+                      Yield (kWh)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dailyTotals.slice(0, 14).map((row) => (
+                    <tr key={row.date} className="border-b border-border last:border-0">
+                      <td className="py-2 pr-4 whitespace-nowrap">{row.date}</td>
+                      <td className="py-2 pr-4 text-right tabular-nums">{row.usedKWh.toFixed(2)}</td>
+                      <td className="py-2 text-right tabular-nums">{row.yieldKWh.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Loading history data...</p>
           )}
         </CardContent>
       </Card>
