@@ -5,6 +5,7 @@ import {backendUrl} from '../config/config';
 import {formatDateTimeFi} from '../lib/dateTimeFormat';
 import {HeatHarmonyClient} from '../lib/heatHarmony/heatHarmonyClient';
 import {HeishamonLatestResponse} from '../lib/heatHarmony/validation/heishamonLatestResponse';
+import {OumanLatestResponse} from '../lib/heatHarmony/validation/oumanLatestResponse';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
 
 type HistoryPoint = {
@@ -20,11 +21,20 @@ type HistoryPoint = {
   cop: number;
 };
 
+type OumanHistoryPoint = {
+  time: string;
+  outsideTemp: number;
+  insideTemp: number;
+  insideTempDemand: number;
+  flowDemand: number;
+  minFlowTemp: number;
+};
+
 type HistoryLineChartCardProps = {
   title: string;
   description: string;
-  data: HistoryPoint[];
-  dataKey: keyof Omit<HistoryPoint, 'time'>;
+  data: Array<Record<string, number | string>>;
+  dataKey: string;
   stroke: string;
   valueFormatter: (value: number) => string;
 };
@@ -90,6 +100,7 @@ function HistoryLineChartCard({
 
 export function HomeHeatingCharts() {
   const [heishamonHistory, setHeishamonHistory] = useState<HeishamonLatestResponse[] | undefined>(undefined);
+  const [oumanHistory, setOumanHistory] = useState<OumanLatestResponse[] | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
 
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
@@ -98,10 +109,20 @@ export function HomeHeatingCharts() {
     const fetchHistory = async () => {
       try {
         setError(undefined);
-        const data = await heatHarmonyClient.getLatestHeishamonHistoryData();
-        setHeishamonHistory(data);
+        const [heishamon, ouman] = await Promise.all([
+          heatHarmonyClient.getLatestHeishamonHistoryData().catch((e) => {
+            console.warn('Failed to fetch Heishamon history:', e);
+            return undefined;
+          }),
+          heatHarmonyClient.getOumanLatestHistory().catch((e) => {
+            console.warn('Failed to fetch Ouman history:', e);
+            return undefined;
+          }),
+        ]);
+        if (heishamon) setHeishamonHistory(heishamon);
+        if (ouman) setOumanHistory(ouman);
       } catch (e) {
-        console.warn('Failed to fetch Heishamon history:', e);
+        console.warn('Failed to fetch history:', e);
         setError('Failed to fetch history data.');
       }
     };
@@ -129,7 +150,18 @@ export function HomeHeatingCharts() {
       cop: r.cop ?? 0,
     }));
 
-  const hasData = heishamonSeries.length > 0;
+  const oumanSeries: OumanHistoryPoint[] = (oumanHistory ?? [])
+    .filter((r) => r?.serverTime)
+    .map((r) => ({
+      time: formatDateTimeFi(r.serverTime),
+      outsideTemp: r.outsideTemp,
+      insideTemp: r.insideTemp,
+      insideTempDemand: r.insideTempDemand,
+      flowDemand: r.flowDemand,
+      minFlowTemp: r.minFlowTemp,
+    }));
+
+  const hasData = heishamonSeries.length > 0 || oumanSeries.length > 0;
   const chartColors = {
     chart1: 'var(--color-chart-1)',
     chart2: 'var(--color-chart-2)',
@@ -220,6 +252,50 @@ export function HomeHeatingCharts() {
               stroke={chartColors.chart4}
               valueFormatter={(v) => v.toFixed(0)}
             />
+            {oumanSeries.length > 0 && (
+              <>
+                <HistoryLineChartCard
+                  title="Outside temperature"
+                  description="Ouman outsideTemp"
+                  data={oumanSeries}
+                  dataKey="outsideTemp"
+                  stroke={chartColors.chart5}
+                  valueFormatter={(v) => `${v.toFixed(1)}°C`}
+                />
+                <HistoryLineChartCard
+                  title="Inside temperature"
+                  description="Ouman insideTemp"
+                  data={oumanSeries}
+                  dataKey="insideTemp"
+                  stroke={chartColors.chart1}
+                  valueFormatter={(v) => `${v.toFixed(1)}°C`}
+                />
+                <HistoryLineChartCard
+                  title="Inside temperature demand"
+                  description="Ouman insideTempDemand"
+                  data={oumanSeries}
+                  dataKey="insideTempDemand"
+                  stroke={chartColors.chart2}
+                  valueFormatter={(v) => `${v.toFixed(1)}°C`}
+                />
+                <HistoryLineChartCard
+                  title="Flow demand"
+                  description="Ouman flowDemand / minFlowTemp"
+                  data={oumanSeries}
+                  dataKey="flowDemand"
+                  stroke={chartColors.chart3}
+                  valueFormatter={(v) => `${v.toFixed(1)}°C`}
+                />
+                <HistoryLineChartCard
+                  title="Minimum flow temperature"
+                  description="Ouman minFlowTemp"
+                  data={oumanSeries}
+                  dataKey="minFlowTemp"
+                  stroke={chartColors.chart4}
+                  valueFormatter={(v) => `${v.toFixed(1)}°C`}
+                />
+              </>
+            )}
           </div>
         )}
       </div>

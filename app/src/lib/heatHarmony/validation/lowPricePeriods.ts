@@ -20,8 +20,11 @@ export const nightPeriodSchema = z.object({
 
 export type NightPeriod = z.infer<typeof nightPeriodSchema>;
 
+export const heatingPeriodResponseSchema = nightPeriodSchema;
+export type HeatingPeriodResponse = NightPeriod;
+
 export const todayLowPricePeriodsResponseSchema = z.object({
-  periods: z.array(lowPriceDateTimeRangeSchema),
+  periods: z.array(lowPriceDateTimeRangeSchema).nullable().optional(),
 });
 
 export type TodayLowPricePeriodsResponse = z.infer<typeof todayLowPricePeriodsResponseSchema>;

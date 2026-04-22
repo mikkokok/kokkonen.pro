@@ -2,8 +2,8 @@ import {z} from 'zod';
 import {isoLocalOrOffsetDateTimeSchema} from './dateTime';
 
 export const heatAutomationTaskStatusSchema = z.object({
-  status: z.string(),
-  errors: z.array(z.string()).optional(),
+  status: z.string().nullable().optional(),
+  errors: z.array(z.string()).nullable().optional(),
 });
 
 export const heatAutomationTaskResponseSchema = z.object({

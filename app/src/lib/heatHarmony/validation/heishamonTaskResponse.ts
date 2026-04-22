@@ -3,8 +3,8 @@ import {isoLocalOrOffsetDateTimeSchema} from './dateTime';
 
 export const heishamonTaskResponseSchema = z.object({
   serverTime: isoLocalOrOffsetDateTimeSchema,
-  status: z.string(),
-  errors: z.array(z.string()).optional(),
+  status: z.string().nullable().optional(),
+  errors: z.array(z.string()).nullable().optional(),
 });
 
 export type HeishamonTaskResponse = z.infer<typeof heishamonTaskResponseSchema>;

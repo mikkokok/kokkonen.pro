@@ -19,7 +19,7 @@ import {HeatHarmonyClient} from '../lib/heatHarmony/heatHarmonyClient';
 import {PingResponse} from '../lib/heatHarmony/validation/pingStatus';
 import {HeatAutomationStatusResponse} from '../lib/heatHarmony/validation/heatAutomationStatus';
 import {HeatAutomationTaskResponse} from '../lib/heatHarmony/validation/heatAutomationTaskResponse';
-import {HeatAutomationOverrideResponse} from '../lib/heatHarmony/validation/heatAutomationOverrideResponse';
+import {HeatAutomationOverrideStatusResponse} from '../lib/heatHarmony/validation/heatAutomationOverrideStatusResponse';
 import {HeishamonLatestResponse} from '../lib/heatHarmony/validation/heishamonLatestResponse';
 import {HeishamonStatusResponse} from '../lib/heatHarmony/validation/heishamonStatusResponse';
 import {HeishamonTaskResponse} from '../lib/heatHarmony/validation/heishamonTaskResponse';
@@ -34,6 +34,12 @@ import {convertHarmonyChangeEnumToString} from '../lib/heatHarmony/validation/ha
 import {EMOverrideStatusResponse} from '../lib/heatHarmony/validation/eMOverrideStatusResponse';
 import {EMOverrideMode} from '../lib/heatHarmony/types/emOverrrideMode';
 import {EMLatestResponse} from '../lib/heatHarmony/validation/eMLatestResponse';
+import {UptimeResponse} from '../lib/heatHarmony/validation/uptimeResponse';
+import {EmChangesResponse} from '../lib/heatHarmony/validation/emChangesResponse';
+import {OilBurnerChangesResponse} from '../lib/heatHarmony/validation/oilBurnerChangesResponse';
+import {Pro3StatusResponse} from '../lib/heatHarmony/validation/pro3StatusResponse';
+import {Pro3OverrideStatusResponse} from '../lib/heatHarmony/validation/pro3OverrideStatusResponse';
+import {Checkbox} from './ui/checkbox';
 import {formatDateTimeFi} from '../lib/dateTimeFormat';
 
 export function HomeHeating() {
@@ -41,7 +47,7 @@ export function HomeHeating() {
   const [heatAutomationPingStatus, setHeatAutomationPingStatus] = useState<PingResponse>({status: null, serverTime: undefined});
   const [heatAutomationStatus, setHeatAutomationStatus] = useState<HeatAutomationStatusResponse | undefined>(undefined);
   const [heatAutomationTaskStatus, setHeatAutomationTaskStatus] = useState<HeatAutomationTaskResponse | undefined>(undefined);
-  const [overrideStatus, setOverrideStatus] = useState<HeatAutomationOverrideResponse | undefined>(undefined);
+  const [overrideStatus, setOverrideStatus] = useState<HeatAutomationOverrideStatusResponse | undefined>(undefined);
 
   const [overrideTemp, setOverrideTemp] = useState<number>(21);
   const [overrideHours, setOverrideHours] = useState<number>(2);
@@ -61,6 +67,16 @@ export function HomeHeating() {
   const [enableUseWaterHeaterData, setEnableUseWaterHeaterData] = useState<EMOverrideStatusResponse | undefined>(undefined);
   const [useWaterHeaterLatest, setUseWaterHeaterLatest] = useState<EMLatestResponse | undefined>(undefined);
   const [useWaterOverrideHours, setUseWaterOverrideHours] = useState<number>(2);
+
+  const [uptime, setUptime] = useState<UptimeResponse | undefined>(undefined);
+  const [emChanges, setEmChanges] = useState<EmChangesResponse | undefined>(undefined);
+  const [oilBurnerChanges, setOilBurnerChanges] = useState<OilBurnerChangesResponse | undefined>(undefined);
+  const [pro3Status, setPro3Status] = useState<Pro3StatusResponse | undefined>(undefined);
+  const [pro3OverrideStatus, setPro3OverrideStatus] = useState<Pro3OverrideStatusResponse | undefined>(undefined);
+  const [pro3OutputAmount, setPro3OutputAmount] = useState<number>(1);
+  const [pro3Output, setPro3Output] = useState<boolean>(true);
+  const [pro3DurationMinutes, setPro3DurationMinutes] = useState<number>(60);
+
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
 
   const fetchData = useCallback(async () => {
@@ -90,6 +106,11 @@ export function HomeHeating() {
         oilburnerLatestData,
         useWaterHeaterLatestData,
         useWaterHeaterOverrideStatus,
+        uptimeData,
+        emChangesData,
+        oilBurnerChangesData,
+        pro3StatusData,
+        pro3OverrideStatusData,
       ] = await Promise.all([
         safe('ping', heatHarmonyClient.getPingStatus()),
         safe('heatAutomationStatus', heatHarmonyClient.getHeatAutomationStatus()),
@@ -106,6 +127,11 @@ export function HomeHeating() {
         safe('oilburnerLatest', heatHarmonyClient.getOilburnerLatestData()),
         safe('useWaterHeaterLatest', heatHarmonyClient.getUseWaterHeaterLatest()),
         safe('useWaterHeaterOverrideStatus', heatHarmonyClient.getUseWaterHeaterOverrideStatus()),
+        safe('uptime', heatHarmonyClient.getUptime()),
+        safe('emChanges', heatHarmonyClient.getEMChanges()),
+        safe('oilBurnerChanges', heatHarmonyClient.getOilBurnerChanges()),
+        safe('pro3Status', heatHarmonyClient.getPro3Status()),
+        safe('pro3OverrideStatus', heatHarmonyClient.getPro3OverrideStatus()),
       ]);
 
       if (ping) setHeatAutomationPingStatus(ping);
@@ -127,6 +153,12 @@ export function HomeHeating() {
       if (oilburnerLatestData) setOilburnerLatest(oilburnerLatestData);
       if (useWaterHeaterLatestData) setUseWaterHeaterLatest(useWaterHeaterLatestData);
       if (useWaterHeaterOverrideStatus) setEnableUseWaterHeaterData(useWaterHeaterOverrideStatus);
+
+      if (uptimeData) setUptime(uptimeData);
+      if (emChangesData) setEmChanges(emChangesData);
+      if (oilBurnerChangesData) setOilBurnerChanges(oilBurnerChangesData);
+      if (pro3StatusData) setPro3Status(pro3StatusData);
+      if (pro3OverrideStatusData) setPro3OverrideStatus(pro3OverrideStatusData);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -241,9 +273,33 @@ export function HomeHeating() {
     }
   };
 
+  const handlePro3Override = async () => {
+    setLoading(true);
+    try {
+      await heatHarmonyClient.overridePro3Output(pro3OutputAmount, pro3Output, pro3DurationMinutes);
+      await fetchData();
+    } catch (error) {
+      console.error('Failed to set Pro3 override:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePro3CancelOverride = async () => {
+    setLoading(true);
+    try {
+      await heatHarmonyClient.cancelPro3Override();
+      await fetchData();
+    } catch (error) {
+      console.error('Failed to cancel Pro3 override:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatDateTime = (value: string | undefined) => formatDateTimeFi(value);
 
-  const isPingOk = (heatAutomationPingStatus.status ?? '').toLowerCase() === 'ok';
+  const isPingOk = (heatAutomationPingStatus.status ?? '').toLowerCase() === 'pong';
 
   const sortChangesByTimeDesc = useCallback(<T extends {time?: string}>(changes: T[]) => {
     const toMs = (value: string | undefined) => {
@@ -262,6 +318,16 @@ export function HomeHeating() {
   const heishamonRecentChanges = useMemo(
     () => sortChangesByTimeDesc(heishamonStatus?.changes ?? []).slice(0, 5),
     [heishamonStatus?.changes, sortChangesByTimeDesc]
+  );
+
+  const emRecentChanges = useMemo(
+    () => sortChangesByTimeDesc(emChanges?.changes ?? []).slice(0, 5),
+    [emChanges?.changes, sortChangesByTimeDesc]
+  );
+
+  const oilBurnerRecentChanges = useMemo(
+    () => sortChangesByTimeDesc(oilBurnerChanges?.changes ?? []).slice(0, 5),
+    [oilBurnerChanges?.changes, sortChangesByTimeDesc]
   );
 
   const formatNumber = (value: number | null | undefined, digits?: number) => {
@@ -306,6 +372,9 @@ export function HomeHeating() {
           <Badge variant={isPingOk ? 'default' : 'destructive'}>
             Ping: {isPingOk ? 'Ok' : heatAutomationPingStatus.status ?? 'No response'}
           </Badge>
+          {uptime?.uptime?.duration && (
+            <Badge variant="secondary">Up: {uptime.uptime.duration}</Badge>
+          )}
           {heatAutomationStatus?.isWorkerRunning ? (
             <Badge variant="default" className="gap-1">
               <HugeiconsIcon icon={CheckmarkCircle02Icon} className="h-3 w-3" />
@@ -453,15 +522,16 @@ export function HomeHeating() {
             <CardDescription>Manually set indoor temperature for a specific duration</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {overrideStatus?.message && (
-              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-                <p className="text-sm text-orange-800">{overrideStatus.message}</p>
-                {overrideStatus.temperature && (
-                  <p className="text-xs text-orange-600 mt-1">
-                    {overrideStatus.temperature}°C for {overrideStatus.hours}h
-                    {overrideStatus.delayHours > 0 && ` (delayed ${overrideStatus.delayHours}h)`}
-                  </p>
-                )}
+            {overrideStatus && (
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  Override: {overrideStatus.isActive ? 'Active' : 'Inactive'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Target: {Number.isFinite(overrideStatus.targetTemp) ? `${overrideStatus.targetTemp}°C` : '—'}
+                  {overrideStatus.until ? ` until ${formatDateTime(overrideStatus.until)}` : ''}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">serverTime: {formatDateTime(overrideStatus.serverTime)}</p>
               </div>
             )}
 
@@ -639,6 +709,27 @@ export function HomeHeating() {
                   Disable Oil Burner
                 </Button>
               </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Recent changes</span>
+                  <span className="text-xs text-muted-foreground">total: {oilBurnerChanges?.changes?.length ?? 0}</span>
+                </div>
+                <div className="rounded-lg border p-3 space-y-2">
+                  {oilBurnerRecentChanges.map((c) => (
+                    <div key={`${c.time}-${c.changeType}`} className="text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{convertHarmonyChangeEnumToString(c.changeType)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDateTime(c.time)}</span>
+                      </div>
+                      {c.description && <div className="text-xs text-muted-foreground">{c.description}</div>}
+                    </div>
+                  ))}
+                  {oilBurnerRecentChanges.length === 0 && (
+                    <div className="text-sm text-muted-foreground">No changes.</div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <Separator />
@@ -661,7 +752,7 @@ export function HomeHeating() {
                   Running: {useWaterHeaterLatest?.isRunning === undefined ? '—' : useWaterHeaterLatest.isRunning ? 'Yes' : 'No'}
                 </div>
                 <div>Last enabled: {formatDateTime(useWaterHeaterLatest?.lastEnabled)}</div>
-                <div>Override until: {formatDateTime(enableUseWaterHeaterData?.overrideUntil)}</div>
+                <div>Override until: {formatDateTime(enableUseWaterHeaterData?.overrideUntil ?? undefined)}</div>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -696,6 +787,129 @@ export function HomeHeating() {
                     Clear Override
                   </Button>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Recent changes</span>
+                  <span className="text-xs text-muted-foreground">total: {emChanges?.changes?.length ?? 0}</span>
+                </div>
+                <div className="rounded-lg border p-3 space-y-2">
+                  {emRecentChanges.map((c) => (
+                    <div key={`${c.time}-${c.changeType}`} className="text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{convertHarmonyChangeEnumToString(c.changeType)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDateTime(c.time)}</span>
+                      </div>
+                      {c.description && <div className="text-xs text-muted-foreground">{c.description}</div>}
+                    </div>
+                  ))}
+                  {emRecentChanges.length === 0 && (
+                    <div className="text-sm text-muted-foreground">No changes.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pro3 Resistor Control</CardTitle>
+            <CardDescription>
+              Shelly Pro3 outputs control the heating resistor (1 output = 2kW, 2 = 4kW, 3 = 6kW)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border p-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Current outputs</span>
+                  <Badge variant="secondary">
+                    {(pro3Status ?? []).filter((o) => o.was_on).length} / {pro3Status?.length ?? 0} on
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  {(pro3Status ?? []).map((o, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Output {idx + 1}</span>
+                      <Badge variant={o.was_on ? 'default' : 'secondary'}>{o.was_on ? 'On' : 'Off'}</Badge>
+                    </div>
+                  ))}
+                  {(pro3Status?.length ?? 0) === 0 && (
+                    <div className="text-sm text-muted-foreground">No outputs reported.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Override status</span>
+                  <Badge variant={pro3OverrideStatus?.isOverridden ? 'default' : 'secondary'}>
+                    {pro3OverrideStatus?.isOverridden ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>
+                    Output amount:{' '}
+                    {pro3OverrideStatus?.outputAmount === undefined || pro3OverrideStatus?.outputAmount === null
+                      ? '—'
+                      : `${pro3OverrideStatus.outputAmount} (~${pro3OverrideStatus.outputAmount * 2}kW)`}
+                  </div>
+                  <div>
+                    Output state:{' '}
+                    {pro3OverrideStatus?.outputState === undefined || pro3OverrideStatus?.outputState === null
+                      ? '—'
+                      : pro3OverrideStatus.outputState
+                        ? 'On'
+                        : 'Off'}
+                  </div>
+                  <div>Until: {formatDateTime(pro3OverrideStatus?.until ?? undefined)}</div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="grid gap-4 md:grid-cols-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="pro3OutputAmount">Outputs on (1-3)</Label>
+                <Input
+                  id="pro3OutputAmount"
+                  type="number"
+                  value={pro3OutputAmount}
+                  onChange={(e: {target: {value: any}}) => setPro3OutputAmount(Number(e.target.value))}
+                  min={1}
+                  max={3}
+                />
+                <p className="text-xs text-muted-foreground">~{pro3OutputAmount * 2} kW</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pro3DurationMinutes">Duration (minutes)</Label>
+                <Input
+                  id="pro3DurationMinutes"
+                  type="number"
+                  value={pro3DurationMinutes}
+                  onChange={(e: {target: {value: any}}) => setPro3DurationMinutes(Number(e.target.value))}
+                  min={1}
+                  max={1440}
+                />
+              </div>
+              <div className="flex items-center gap-2 pb-2">
+                <Checkbox
+                  id="pro3Output"
+                  checked={pro3Output}
+                  onCheckedChange={(checked) => setPro3Output(Boolean(checked))}
+                />
+                <Label htmlFor="pro3Output">Output on</Label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handlePro3Override} disabled={loading}>
+                  Apply Override
+                </Button>
+                <Button onClick={handlePro3CancelOverride} disabled={loading} variant="outline">
+                  Cancel Override
+                </Button>
               </div>
             </div>
           </CardContent>

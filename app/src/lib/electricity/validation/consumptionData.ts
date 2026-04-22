@@ -22,10 +22,13 @@ export const validConsumptionKeys = consumptionKeysSchema.options;
 
 export const consumptionDataSchema = z.object({
   timestamp: z.string(),
-  data: z.record(consumptionKeysSchema, z.number()),
+  data: z
+    .record(consumptionKeysSchema, z.number())
+    .nullable()
+    .transform((value) => value ?? {}),
 });
 
-export type ConsumptionData = z.infer<typeof consumptionDataSchema>;
+export type ConsumptionData = z.output<typeof consumptionDataSchema>;
 
 export function translateKey(key: ConsumptionKeys) {
   switch (key) {

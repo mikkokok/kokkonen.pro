@@ -3,7 +3,7 @@ import {harmonyChangeSchema} from './harmonyChange';
 import {isoLocalOrOffsetDateTimeSchema} from './dateTime';
 
 export const oumanStatusResponseSchema = z.object({
-  changes: z.array(harmonyChangeSchema),
+  changes: z.array(harmonyChangeSchema).nullable().optional(),
   serverTime: isoLocalOrOffsetDateTimeSchema,
 });
 
