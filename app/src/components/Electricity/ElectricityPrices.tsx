@@ -4,14 +4,17 @@ import {HeatHarmonyClient} from "../../lib/heatHarmony/heatHarmonyClient";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {Separator} from "../ui/separator";
 import {PricesResponse} from "../../lib/heatHarmony/validation/pricesResponse";
-import {NightPeriod, TodayLowPricePeriodsResponse} from "../../lib/heatHarmony/validation/lowPricePeriods";
+import {HeatingPeriodResponse, NightPeriod, TodayLowPricePeriodsResponse} from "../../lib/heatHarmony/validation/lowPricePeriods";
 import {formatDateTimeFi} from "../../lib/dateTimeFormat";
+import {Badge} from "../ui/badge";
 
 export default function ElectricityPrices() {
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
   const [todayPrices, setTodayPrices] = useState<PricesResponse | undefined>(undefined);
   const [tomorrowPrices, setTomorrowPrices] = useState<PricesResponse | undefined>(undefined);
   const [nightPeriod, setNightPeriod] = useState<NightPeriod | undefined>(undefined);
+  const [dayPeriod, setDayPeriod] = useState<HeatingPeriodResponse | undefined>(undefined);
+  const [heatingPeriodSource, setHeatingPeriodSource] = useState<string | undefined>(undefined);
   const [todayLowPricePeriods, setTodayLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
   const [allLowPricePeriods, setAllLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
 
@@ -30,6 +33,18 @@ export default function ElectricityPrices() {
       setTomorrowPrices(tomorrowElectricityPrices);
       const nightPeriodElectricityPrices = await heatHarmonyClient.getNightPeriodElectricityPrices();
       setNightPeriod(nightPeriodElectricityPrices);
+      try {
+        const dayPeriodElectricityPrices = await heatHarmonyClient.getDayPeriodElectricityPrices();
+        setDayPeriod(dayPeriodElectricityPrices);
+      } catch (e) {
+        console.warn('Failed to fetch day period:', e);
+      }
+      try {
+        const source = await heatHarmonyClient.getHeatingPeriodSource();
+        setHeatingPeriodSource(source);
+      } catch (e) {
+        console.warn('Failed to fetch heating period source:', e);
+      }
       const todaysLowPricePeriods = await heatHarmonyClient.getTodaysLowPricePeriods();
       setTodayLowPricePeriods(todaysLowPricePeriods);
       const allLowPricePeriods = await heatHarmonyClient.getAllLowPricePeriods();
@@ -43,7 +58,8 @@ export default function ElectricityPrices() {
     void fetchData();
   }, [fetchData]);
 
-  const formatDateHour = (dateString: string, hour: number) => {
+  const formatDateHour = (dateString: string | null | undefined, hour: number) => {
+    if (!dateString) return '—';
     const base = new Date(dateString);
     if (Number.isNaN(base.getTime())) return dateString;
     const withHour = new Date(base);
@@ -64,6 +80,13 @@ export default function ElectricityPrices() {
           <CardDescription>Today, tomorrow and selected night period</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Heating period source</span>
+            <Badge variant="secondary">{heatingPeriodSource ? heatingPeriodSource : '—'}</Badge>
+          </div>
+
+          <Separator />
+
           <div className="rounded-lg border p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Night period</span>
@@ -77,6 +100,23 @@ export default function ElectricityPrices() {
               </div>
               <div className="text-sm">
                 <span className="text-muted-foreground">Avg:</span> {formatPrice(nightPeriod?.period?.averagePrice)}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Day period</span>
+            </div>
+            <div className="grid gap-2 md:grid-cols-3">
+              <div className="text-sm">
+                <span className="text-muted-foreground">Start:</span> {formatDateTimeFi(dayPeriod?.period?.start, {second: undefined})}
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">End:</span> {formatDateTimeFi(dayPeriod?.period?.end, {second: undefined})}
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Avg:</span> {formatPrice(dayPeriod?.period?.averagePrice)}
               </div>
             </div>
           </div>
@@ -109,7 +149,7 @@ export default function ElectricityPrices() {
           <div className="rounded-lg border p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">All low price periods</span>
-              <span className="text-xs text-muted-foreground">{allLowPricePeriods?.periods.length ?? 0} rows</span>
+              <span className="text-xs text-muted-foreground">{(allLowPricePeriods?.periods ?? []).length} rows</span>
             </div>
             <div className="space-y-1">
               {(allLowPricePeriods?.periods ?? []).map((p) => (

@@ -4,10 +4,21 @@ import {HeatAutomationOverrideResponse, heatAutomationOverrideResponseSchema} fr
 import {HeatAutomationRemoveOverrideResponse, heatAutomationRemoveOverrideResponseSchema} from "./validation/heatAutomationRemoveOverrideResponse";
 import {HeatAutomationStatusResponse, heatAutomationStatusResponseSchema} from "./validation/heatAutomationStatus";
 import {HeatAutomationTaskResponse, heatAutomationTaskResponseSchema} from "./validation/heatAutomationTaskResponse";
+import {
+    HeatAutomationOverrideStatusResponse,
+    heatAutomationOverrideStatusResponseSchema,
+} from "./validation/heatAutomationOverrideStatusResponse";
 import {HeishamonLatestResponse, heishamonLatestResponseSchema} from "./validation/heishamonLatestResponse";
 import {HeishamonStatusResponse, heishamonStatusResponseSchema} from "./validation/heishamonStatusResponse";
 import {HeishamonTaskResponse, heishamonTaskResponseSchema} from "./validation/heishamonTaskResponse";
-import {NightPeriod, nightPeriodSchema, TodayLowPricePeriodsResponse, todayLowPricePeriodsResponseSchema} from "./validation/lowPricePeriods";
+import {
+    HeatingPeriodResponse,
+    heatingPeriodResponseSchema,
+    NightPeriod,
+    nightPeriodSchema,
+    TodayLowPricePeriodsResponse,
+    todayLowPricePeriodsResponseSchema,
+} from "./validation/lowPricePeriods";
 import {OumanLatestResponse, oumanLatestResponseSchema} from "./validation/oumanLatestResponse";
 import {OumanStatusResponse, oumanStatusResponseSchema} from "./validation/oumanStatusResponse";
 import {OumanTaskResponse, oumanTaskResponseSchema} from "./validation/oumanTaskResponse";
@@ -19,6 +30,13 @@ import {OilburnerLatestResponse, oilburnerLatestResponseSchema} from "./validati
 import {EMOverrideStatusResponse, eMOverrideStatusResponseSchema} from "./validation/eMOverrideStatusResponse";
 import {EMOverrideResponse, eMOverrideResponseSchema} from "./validation/eMOverrideResponse";
 import {EMLatestResponse, eMLatestResponseSchema} from "./validation/eMLatestResponse";
+import {UptimeResponse, uptimeResponseSchema} from "./validation/uptimeResponse";
+import {EmChangesResponse, emChangesResponseSchema} from "./validation/emChangesResponse";
+import {OilBurnerChangesResponse, oilBurnerChangesResponseSchema} from "./validation/oilBurnerChangesResponse";
+import {Pro3StatusResponse, pro3StatusResponseSchema} from "./validation/pro3StatusResponse";
+import {Pro3OverrideAcceptedResponse, pro3OverrideAcceptedResponseSchema} from "./validation/pro3OverrideAcceptedResponse";
+import {Pro3OverrideCancelledResponse, pro3OverrideCancelledResponseSchema} from "./validation/pro3OverrideCancelledResponse";
+import {Pro3OverrideStatusResponse, pro3OverrideStatusResponseSchema} from "./validation/pro3OverrideStatusResponse";
 
 export class HeatHarmonyClient {
     private baseUrl: string;
@@ -33,6 +51,12 @@ export class HeatHarmonyClient {
         return PingResponseSchema.parse(await response.json());
     }
 
+    public async getUptime(): Promise<UptimeResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/appstatus/uptime`, {method: 'GET'});
+        const response = await handleFetch(request);
+        return uptimeResponseSchema.parse(await response.json());
+    }
+
     public async getHeatAutomationStatus(): Promise<HeatAutomationStatusResponse> {
         const request = new Request(`${this.baseUrl}api/heatharmony/heatautomation/status`, {method: 'GET'});
         const response = await handleFetch(request);
@@ -45,10 +69,10 @@ export class HeatHarmonyClient {
         return heatAutomationTaskResponseSchema.parse(await response.json());
     }
 
-    public async getOverrideStatus(): Promise<HeatAutomationOverrideResponse> {
+    public async getOverrideStatus(): Promise<HeatAutomationOverrideStatusResponse> {
         const request = new Request(`${this.baseUrl}api/heatharmony/heatautomation/override`, {method: 'GET'});
         const response = await handleFetch(request);
-        return heatAutomationOverrideResponseSchema.parse(await response.json());
+        return heatAutomationOverrideStatusResponseSchema.parse(await response.json());
     }
 
     public async setOverride(requestBody: HeatAutomationOverrideRequest): Promise<HeatAutomationOverrideResponse> {
@@ -124,6 +148,23 @@ export class HeatHarmonyClient {
         return oumanLatestResponseSchema.parse(await response.json());
     }
 
+    public async getOumanLatestHistory(): Promise<OumanLatestResponse[]> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/ouman/latestHistory`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return oumanLatestResponseSchema.array().parse(await response.json());
+    }
+
+    public async getHeatingPeriodSource(): Promise<string> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/heatautomation/heatperiod`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        const raw = await response.json();
+        return typeof raw === 'string' ? raw : String(raw ?? '');
+    }
+
     public async getTodayElectricityPrices(): Promise<PricesResponse> {
         const request = new Request(`${this.baseUrl}api/heatharmony/prices/today`, {
             method: 'GET',
@@ -164,6 +205,14 @@ export class HeatHarmonyClient {
         return nightPeriodSchema.parse(await response.json());
     }
 
+    public async getDayPeriodElectricityPrices(): Promise<HeatingPeriodResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/prices/dayperiod`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return heatingPeriodResponseSchema.parse(await response.json());
+    }
+
     public async getTrvLatestData(): Promise<TrvLatestResponse> {
         const request = new Request(`${this.baseUrl}api/heatharmony/trv/latest`, {
             method: 'GET',
@@ -200,6 +249,14 @@ export class HeatHarmonyClient {
         });
         const response = await handleFetch(request);
         return oilburnerLatestResponseSchema.parse(await response.json());
+    }
+
+    public async getOilBurnerChanges(): Promise<OilBurnerChangesResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/oilburner/changes`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return oilBurnerChangesResponseSchema.parse(await response.json());
     }
 
     public async getUseWaterHeaterLatest(): Promise<EMLatestResponse> {
@@ -253,5 +310,54 @@ export class HeatHarmonyClient {
         });
         const response = await handleFetch(request);
         return eMOverrideStatusResponseSchema.parse(await response.json());
+    }
+
+    public async getEMChanges(): Promise<EmChangesResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/em/changes`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return emChangesResponseSchema.parse(await response.json());
+    }
+
+    public async getPro3Status(): Promise<Pro3StatusResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/pro3/status`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return pro3StatusResponseSchema.parse(await response.json());
+    }
+
+    public async getPro3OverrideStatus(): Promise<Pro3OverrideStatusResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/pro3/override/status`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return pro3OverrideStatusResponseSchema.parse(await response.json());
+    }
+
+    public async overridePro3Output(
+        outputAmount: number,
+        output: boolean,
+        durationMinutes: number
+    ): Promise<Pro3OverrideAcceptedResponse> {
+        const params = new URLSearchParams({
+            outputAmount: String(outputAmount),
+            output: String(output),
+            durationMinutes: String(durationMinutes),
+        });
+        const request = new Request(`${this.baseUrl}api/heatharmony/pro3/override?${params.toString()}`, {
+            method: 'POST',
+        });
+        const response = await handleFetch(request);
+        return pro3OverrideAcceptedResponseSchema.parse(await response.json());
+    }
+
+    public async cancelPro3Override(): Promise<Pro3OverrideCancelledResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/pro3/override/cancel`, {
+            method: 'POST',
+        });
+        const response = await handleFetch(request);
+        return pro3OverrideCancelledResponseSchema.parse(await response.json());
     }
 }

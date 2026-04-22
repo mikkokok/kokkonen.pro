@@ -1,8 +1,8 @@
 import {z} from 'zod';
 
 export const electricityPriceSchema = z.object({
-  price: z.string(),
-  date: z.string(),
+  date: z.string().nullable(),
+  price: z.string().nullable(),
   hour: z.number(),
 });
 
