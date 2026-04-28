@@ -52,6 +52,7 @@ export function HomeHeating() {
   const [overrideTemp, setOverrideTemp] = useState<number>(21);
   const [overrideHours, setOverrideHours] = useState<number>(2);
   const [overrideDelay, setOverrideDelay] = useState<number>(0);
+  const [overrideOverridePrevious, setOverrideOverridePrevious] = useState<boolean>(true);
 
   const [oumanLatest, setOumanLatest] = useState<OumanLatestResponse | undefined>(undefined);
   const [oumanStatus, setOumanStatus] = useState<OumanStatusResponse | undefined>(undefined);
@@ -71,11 +72,12 @@ export function HomeHeating() {
   const [uptime, setUptime] = useState<UptimeResponse | undefined>(undefined);
   const [emChanges, setEmChanges] = useState<EmChangesResponse | undefined>(undefined);
   const [oilBurnerChanges, setOilBurnerChanges] = useState<OilBurnerChangesResponse | undefined>(undefined);
-  const [pro3Status, setPro3Status] = useState<Pro3StatusResponse | undefined>(undefined);
+  const [pro3Status, setPro3Status] = useState<Pro3StatusResponse[] | undefined>(undefined);
   const [pro3OverrideStatus, setPro3OverrideStatus] = useState<Pro3OverrideStatusResponse | undefined>(undefined);
   const [pro3OutputAmount, setPro3OutputAmount] = useState<number>(1);
   const [pro3Output, setPro3Output] = useState<boolean>(true);
   const [pro3DurationMinutes, setPro3DurationMinutes] = useState<number>(60);
+  const [actionStatus, setActionStatus] = useState<{type: 'success' | 'error'; message: string} | undefined>(undefined);
 
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
 
@@ -172,60 +174,60 @@ export function HomeHeating() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const runAction = useCallback(
+    async (label: string, action: () => Promise<void>) => {
+      setLoading(true);
+      setActionStatus(undefined);
+      try {
+        await action();
+        setActionStatus({type: 'success', message: `${label} succeeded.`});
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to ${label.toLowerCase()}:`, error);
+        setActionStatus({type: 'error', message: `${label} failed: ${message}`});
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   const handleSetOverride = async () => {
-    setLoading(true);
-    try {
+    await runAction('Set temperature override', async () => {
       const payload: HeatAutomationOverrideRequest = {
         temperature: overrideTemp,
         hours: overrideHours,
-        overRidePrevious: true,
+        overRidePrevious: overrideOverridePrevious,
         delay: overrideDelay,
+        quietMode: 0,
       };
-
       await heatHarmonyClient.setOverride(payload);
       await fetchData();
-    } catch (error) {
-      console.error('Failed to set override:', error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleCancelOverride = async () => {
-    setLoading(true);
-    try {
+    await runAction('Cancel temperature override', async () => {
       await heatHarmonyClient.removeOverride();
       await fetchData();
-    } catch (error) {
-      console.error('Failed to cancel override:', error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleOilBurnerControl = async (action: 'enable' | 'disable') => {
-    setLoading(true);
-    try {
+    await runAction(`${action === 'enable' ? 'Enable' : 'Disable'} oil burner`, async () => {
       if (action === 'enable') {
         await heatHarmonyClient.enableOilburner();
-        const data = await heatHarmonyClient.getOilburnerLatestData();
-        setOilburnerLatest(data);
       } else {
         await heatHarmonyClient.disableOilburner();
-        const data = await heatHarmonyClient.getOilburnerLatestData();
-        setOilburnerLatest(data);
       }
+      const data = await heatHarmonyClient.getOilburnerLatestData();
+      setOilburnerLatest(data);
       await fetchData();
-    } catch (error) {
-      console.error(`Failed to ${action} oil burner:`, error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleUseWaterHeaterControl = async (action: 'enable' | 'disable') => {
-    setLoading(true);
-    try {
+    await runAction(`${action === 'enable' ? 'Enable' : 'Disable'} use water heater`, async () => {
       if (action === 'enable') {
         await heatHarmonyClient.enableUseWaterHeater();
       } else {
@@ -234,16 +236,11 @@ export function HomeHeating() {
       const data = await heatHarmonyClient.getUseWaterHeaterLatest();
       setUseWaterHeaterLatest(data);
       await fetchData();
-    } catch (error) {
-      console.error(`Failed to ${action} use water heater:`, error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleUseWaterHeaterOverride = async (mode: 'enable' | 'disable') => {
-    setLoading(true);
-    try {
+    await runAction(`Set use water heater override (${mode})`, async () => {
       if (mode === 'enable') {
         await heatHarmonyClient.setEnableUseWaterHeaterOverride(useWaterOverrideHours);
       } else {
@@ -252,49 +249,30 @@ export function HomeHeating() {
       const data = await heatHarmonyClient.getUseWaterHeaterLatest();
       setUseWaterHeaterLatest(data);
       await fetchData();
-    } catch (error) {
-      console.error(`Failed to set use water heater override (${mode}):`, error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handleClearUseWaterHeaterOverride = async () => {
-    setLoading(true);
-    try {
+    await runAction('Clear use water heater override', async () => {
       await heatHarmonyClient.deleteUseWaterHeaterOverride();
       const data = await heatHarmonyClient.getUseWaterHeaterLatest();
       setUseWaterHeaterLatest(data);
       await fetchData();
-    } catch (error) {
-      console.error('Failed to clear use water heater override:', error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handlePro3Override = async () => {
-    setLoading(true);
-    try {
+    await runAction('Set Pro3 override', async () => {
       await heatHarmonyClient.overridePro3Output(pro3OutputAmount, pro3Output, pro3DurationMinutes);
       await fetchData();
-    } catch (error) {
-      console.error('Failed to set Pro3 override:', error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const handlePro3CancelOverride = async () => {
-    setLoading(true);
-    try {
+    await runAction('Cancel Pro3 override', async () => {
       await heatHarmonyClient.cancelPro3Override();
       await fetchData();
-    } catch (error) {
-      console.error('Failed to cancel Pro3 override:', error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const formatDateTime = (value: string | undefined) => formatDateTimeFi(value);
@@ -388,6 +366,31 @@ export function HomeHeating() {
           )}
         </div>
       </div>
+
+      {actionStatus && (
+        <div
+          className={`rounded-lg border p-3 text-sm flex items-start justify-between gap-3 ${actionStatus.type === 'error'
+              ? 'border-destructive/60 bg-destructive/10 text-destructive'
+              : 'border-emerald-600/60 bg-emerald-600/10 text-emerald-500'
+            }`}
+          role={actionStatus.type === 'error' ? 'alert' : 'status'}
+        >
+          <div className="flex items-start gap-2">
+            <HugeiconsIcon
+              icon={actionStatus.type === 'error' ? AlertCircleIcon : CheckmarkCircle02Icon}
+              className="h-4 w-4 mt-0.5 shrink-0"
+            />
+            <span className="break-words">{actionStatus.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionStatus(undefined)}
+            className="text-xs underline opacity-80 hover:opacity-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="space-y-6">
         <Card>
@@ -570,6 +573,15 @@ export function HomeHeating() {
                   max={12}
                 />
               </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="overRidePrevious"
+                checked={overrideOverridePrevious}
+                onCheckedChange={(checked) => setOverrideOverridePrevious(Boolean(checked))}
+              />
+              <Label htmlFor="overRidePrevious">Override previous</Label>
             </div>
 
             <div className="flex gap-2">
@@ -826,14 +838,14 @@ export function HomeHeating() {
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium">Current outputs</span>
                   <Badge variant="secondary">
-                    {(pro3Status ?? []).filter((o) => o.was_on).length} / {pro3Status?.length ?? 0} on
+                    {(pro3Status ?? []).filter((o) => o.output).length} / {pro3Status?.length ?? 0} on
                   </Badge>
                 </div>
                 <div className="space-y-1">
                   {(pro3Status ?? []).map((o, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Output {idx + 1}</span>
-                      <Badge variant={o.was_on ? 'default' : 'secondary'}>{o.was_on ? 'On' : 'Off'}</Badge>
+                      <Badge variant={o.output ? 'default' : 'secondary'}>{o.output ? 'On' : 'Off'}</Badge>
                     </div>
                   ))}
                   {(pro3Status?.length ?? 0) === 0 && (
