@@ -78,6 +78,7 @@ export class HeatHarmonyClient {
     public async setOverride(requestBody: HeatAutomationOverrideRequest): Promise<HeatAutomationOverrideResponse> {
         const request = new Request(`${this.baseUrl}api/heatharmony/heatautomation/override`, {
             method: 'POST',
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(requestBody),
         });
         const response = await handleFetch(request);
@@ -320,12 +321,12 @@ export class HeatHarmonyClient {
         return emChangesResponseSchema.parse(await response.json());
     }
 
-    public async getPro3Status(): Promise<Pro3StatusResponse> {
+    public async getPro3Status(): Promise<Pro3StatusResponse[]> {
         const request = new Request(`${this.baseUrl}api/heatharmony/pro3/status`, {
             method: 'GET',
         });
         const response = await handleFetch(request);
-        return pro3StatusResponseSchema.parse(await response.json());
+        return pro3StatusResponseSchema.array().parse(await response.json());
     }
 
     public async getPro3OverrideStatus(): Promise<Pro3OverrideStatusResponse> {

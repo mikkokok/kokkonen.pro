@@ -3,4 +3,5 @@ export interface HeatAutomationOverrideRequest {
   hours: number;
   overRidePrevious: boolean;
   delay: number;
+  quietMode: number;
 }

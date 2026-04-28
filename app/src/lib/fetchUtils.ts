@@ -9,7 +9,7 @@ export async function patchAuthHeaders(request: Request): Promise<void> {
     request.headers.set('Authorization', `Bearer ${authResult.accessToken}`);
 
     const isJsonMethod = request.method !== 'GET' && request.method !== 'HEAD';
-    if (isJsonMethod && request.body && !request.headers.has('Content-Type')) {
+    if (isJsonMethod && request.body) {
         request.headers.set('Content-Type', 'application/json');
     }
 }
