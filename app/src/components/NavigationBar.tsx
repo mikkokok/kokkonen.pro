@@ -2,12 +2,13 @@ import {cn} from '../lib/utils';
 import NavItem from './NavItem';
 import {useIsAuthenticated} from '@azure/msal-react';
 import {useLocation} from 'react-router-dom';
-import {Home08Icon, Login02Icon, TemperatureIcon, ElectricHome01Icon} from '@hugeicons/core-free-icons';
+import {Home08Icon, Login02Icon, TemperatureIcon, ElectricHome01Icon, ChipIcon} from '@hugeicons/core-free-icons';
 
 const navItems = [
   {text: 'Home', path: '/', hidden: true, icon: Home08Icon},
   {text: 'Home heating', path: '/home-heating', hidden: true, icon: TemperatureIcon},
   {text: 'Electricity', path: '/electricity', hidden: true, icon: ElectricHome01Icon},
+  {text: 'Devices', path: '/devices', hidden: true, icon: ChipIcon},
   {text: 'Login', path: '/login', hidden: false, icon: Login02Icon},
 ];
 
