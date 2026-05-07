@@ -6,6 +6,7 @@ import NavigationBar from './components/NavigationBar';
 import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
 import Electricity from './components/Electricity/Electricity';
+import Devices from './components/Devices/Devices';
 import RequireAuth from './components/RequireAuth';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/electricity" element={<RequireAuth><Electricity /></RequireAuth>} />
             <Route path="/home-heating" element={<RequireAuth><HomeHeatingTabs /></RequireAuth>} />
+            <Route path="/devices" element={<RequireAuth><Devices /></RequireAuth>} />
             <Route path="*" element={<RequireAuth><Home /></RequireAuth>} />
           </Routes>
         </div>
