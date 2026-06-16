@@ -14,6 +14,7 @@ export default function ElectricityPrices() {
   const [tomorrowPrices, setTomorrowPrices] = useState<PricesResponse | undefined>(undefined);
   const [nightPeriod, setNightPeriod] = useState<NightPeriod | undefined>(undefined);
   const [dayPeriod, setDayPeriod] = useState<HeatingPeriodResponse | undefined>(undefined);
+  const [heatingPeriodHours, setHeatingPeriodHours] = useState<HeatingPeriodResponse | undefined>(undefined);
   const [heatingPeriodSource, setHeatingPeriodSource] = useState<string | undefined>(undefined);
   const [todayLowPricePeriods, setTodayLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
   const [allLowPricePeriods, setAllLowPricePeriods] = useState<TodayLowPricePeriodsResponse | undefined>(undefined);
@@ -38,6 +39,12 @@ export default function ElectricityPrices() {
         setDayPeriod(dayPeriodElectricityPrices);
       } catch (e) {
         console.warn('Failed to fetch day period:', e);
+      }
+      try {
+        const heatingPeriodHoursData = await heatHarmonyClient.getHeatingPeriodHours();
+        setHeatingPeriodHours(heatingPeriodHoursData);
+      } catch (e) {
+        console.warn('Failed to fetch heating period hours:', e);
       }
       try {
         const source = await heatHarmonyClient.getHeatingPeriodSource();
@@ -117,6 +124,23 @@ export default function ElectricityPrices() {
               </div>
               <div className="text-sm">
                 <span className="text-muted-foreground">Avg:</span> {formatPrice(dayPeriod?.period?.averagePrice)}
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Heating period hours</span>
+            </div>
+            <div className="grid gap-2 md:grid-cols-3">
+              <div className="text-sm">
+                <span className="text-muted-foreground">Start:</span> {formatDateTimeFi(heatingPeriodHours?.period?.start, {second: undefined})}
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">End:</span> {formatDateTimeFi(heatingPeriodHours?.period?.end, {second: undefined})}
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Avg:</span> {formatPrice(heatingPeriodHours?.period?.averagePrice)}
               </div>
             </div>
           </div>
