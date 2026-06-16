@@ -3,6 +3,7 @@ import {isoLocalOrOffsetDateTimeSchema} from './dateTime';
 
 export const eMLatestResponseSchema = z.object({
   lastEnabled: isoLocalOrOffsetDateTimeSchema,
+  lastDisabled: isoLocalOrOffsetDateTimeSchema.optional(),
   isOverridden: z.boolean(),
   isRunning: z.boolean(),
   isOn: z.boolean(),

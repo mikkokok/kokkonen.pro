@@ -18,16 +18,12 @@ import {backendUrl} from '../config/config';
 import {HeatHarmonyClient} from '../lib/heatHarmony/heatHarmonyClient';
 import {PingResponse} from '../lib/heatHarmony/validation/pingStatus';
 import {HeatAutomationStatusResponse} from '../lib/heatHarmony/validation/heatAutomationStatus';
-import {HeatAutomationTaskResponse} from '../lib/heatHarmony/validation/heatAutomationTaskResponse';
 import {HeatAutomationOverrideStatusResponse} from '../lib/heatHarmony/validation/heatAutomationOverrideStatusResponse';
 import {HeishamonLatestResponse} from '../lib/heatHarmony/validation/heishamonLatestResponse';
 import {HeishamonStatusResponse} from '../lib/heatHarmony/validation/heishamonStatusResponse';
-import {HeishamonTaskResponse} from '../lib/heatHarmony/validation/heishamonTaskResponse';
 import {OumanLatestResponse} from '../lib/heatHarmony/validation/oumanLatestResponse';
 import {OumanStatusResponse} from '../lib/heatHarmony/validation/oumanStatusResponse';
-import {OumanTaskResponse} from '../lib/heatHarmony/validation/oumanTaskResponse';
 import {TrvLatestResponse} from '../lib/heatHarmony/validation/trvLatestResponse';
-import {TrvTaskResponse} from '../lib/heatHarmony/validation/trvTaskResponse';
 import {HeatAutomationOverrideRequest} from '../lib/heatHarmony/types/heatAutomationOverrideRequest';
 import {OilburnerLatestResponse} from '../lib/heatHarmony/validation/oilburnerLatestResponse';
 import {convertHarmonyChangeEnumToString} from '../lib/heatHarmony/validation/harmonyChange';
@@ -39,6 +35,7 @@ import {EmChangesResponse} from '../lib/heatHarmony/validation/emChangesResponse
 import {OilBurnerChangesResponse} from '../lib/heatHarmony/validation/oilBurnerChangesResponse';
 import {Pro3StatusResponse} from '../lib/heatHarmony/validation/pro3StatusResponse';
 import {Pro3OverrideStatusResponse} from '../lib/heatHarmony/validation/pro3OverrideStatusResponse';
+import {SelectedTempsResponse} from '../lib/heatHarmony/validation/selectedTempsResponse';
 import {Checkbox} from './ui/checkbox';
 import {formatDateTimeFi} from '../lib/dateTimeFormat';
 
@@ -46,7 +43,6 @@ export function HomeHeating() {
   const [loading, setLoading] = useState(false);
   const [heatAutomationPingStatus, setHeatAutomationPingStatus] = useState<PingResponse>({status: null, serverTime: undefined});
   const [heatAutomationStatus, setHeatAutomationStatus] = useState<HeatAutomationStatusResponse | undefined>(undefined);
-  const [heatAutomationTaskStatus, setHeatAutomationTaskStatus] = useState<HeatAutomationTaskResponse | undefined>(undefined);
   const [overrideStatus, setOverrideStatus] = useState<HeatAutomationOverrideStatusResponse | undefined>(undefined);
 
   const [overrideTemp, setOverrideTemp] = useState<number>(21);
@@ -56,20 +52,18 @@ export function HomeHeating() {
 
   const [oumanLatest, setOumanLatest] = useState<OumanLatestResponse | undefined>(undefined);
   const [oumanStatus, setOumanStatus] = useState<OumanStatusResponse | undefined>(undefined);
-  const [oumanTaskStatus, setOumanTaskStatus] = useState<OumanTaskResponse | undefined>(undefined);
 
   const [heishamonLatest, setHeishamonLatest] = useState<HeishamonLatestResponse | undefined>(undefined);
   const [heishamonStatus, setHeishamonStatus] = useState<HeishamonStatusResponse | undefined>(undefined);
-  const [heishamonTaskStatus, setHeishamonTaskStatus] = useState<HeishamonTaskResponse | undefined>(undefined);
 
   const [trvLatest, setTrvLatest] = useState<TrvLatestResponse | undefined>(undefined);
-  const [trvTaskStatus, setTrvTaskStatus] = useState<TrvTaskResponse | undefined>(undefined);
   const [oilburnerLatest, setOilburnerLatest] = useState<OilburnerLatestResponse | undefined>(undefined);
   const [enableUseWaterHeaterData, setEnableUseWaterHeaterData] = useState<EMOverrideStatusResponse | undefined>(undefined);
   const [useWaterHeaterLatest, setUseWaterHeaterLatest] = useState<EMLatestResponse | undefined>(undefined);
   const [useWaterOverrideHours, setUseWaterOverrideHours] = useState<number>(2);
 
   const [uptime, setUptime] = useState<UptimeResponse | undefined>(undefined);
+  const [avgTempLast2Days, setAvgTempLast2Days] = useState<number | undefined>(undefined);
   const [emChanges, setEmChanges] = useState<EmChangesResponse | undefined>(undefined);
   const [oilBurnerChanges, setOilBurnerChanges] = useState<OilBurnerChangesResponse | undefined>(undefined);
   const [pro3Status, setPro3Status] = useState<Pro3StatusResponse[] | undefined>(undefined);
@@ -77,6 +71,7 @@ export function HomeHeating() {
   const [pro3OutputAmount, setPro3OutputAmount] = useState<number>(1);
   const [pro3Output, setPro3Output] = useState<boolean>(true);
   const [pro3DurationMinutes, setPro3DurationMinutes] = useState<number>(60);
+  const [selectedTemps, setSelectedTemps] = useState<SelectedTempsResponse | undefined>(undefined);
   const [actionStatus, setActionStatus] = useState<{type: 'success' | 'error'; message: string} | undefined>(undefined);
 
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
@@ -95,72 +90,66 @@ export function HomeHeating() {
       const [
         ping,
         automationStatus,
-        automationTaskStatus,
         automationOverrideStatus,
         oumanLatestData,
         oumanStatusData,
-        oumanTaskStatusData,
         heishamonLatestData,
         heishamonStatusData,
-        heishamonTaskStatusData,
         trvLatestData,
-        trvTaskStatusData,
         oilburnerLatestData,
         useWaterHeaterLatestData,
         useWaterHeaterOverrideStatus,
         uptimeData,
+        restlessFalconAvgTemp,
         emChangesData,
         oilBurnerChangesData,
         pro3StatusData,
         pro3OverrideStatusData,
+        selectedTempsData,
       ] = await Promise.all([
         safe('ping', heatHarmonyClient.getPingStatus()),
         safe('heatAutomationStatus', heatHarmonyClient.getHeatAutomationStatus()),
-        safe('heatAutomationTaskStatus', heatHarmonyClient.getHeatAutomationTaskStatus()),
         safe('overrideStatus', heatHarmonyClient.getOverrideStatus()),
         safe('oumanLatest', heatHarmonyClient.getOumanLatestData()),
         safe('oumanStatus', heatHarmonyClient.getOumanStatus()),
-        safe('oumanTaskStatus', heatHarmonyClient.getOumanTaskStatus()),
         safe('heishamonLatest', heatHarmonyClient.getLatestHeishamonData()),
         safe('heishamonStatus', heatHarmonyClient.getHeishamonStatus()),
-        safe('heishamonTaskStatus', heatHarmonyClient.getHeishamonTaskStatus()),
         safe('trvLatest', heatHarmonyClient.getTrvLatestData()),
-        safe('trvTaskStatus', heatHarmonyClient.getTrvTaskStatus()),
         safe('oilburnerLatest', heatHarmonyClient.getOilburnerLatestData()),
         safe('useWaterHeaterLatest', heatHarmonyClient.getUseWaterHeaterLatest()),
         safe('useWaterHeaterOverrideStatus', heatHarmonyClient.getUseWaterHeaterOverrideStatus()),
         safe('uptime', heatHarmonyClient.getUptime()),
+        safe('restlessFalconAvgTemp', heatHarmonyClient.getRestlessFalconAvgTemperature(2)),
         safe('emChanges', heatHarmonyClient.getEMChanges()),
         safe('oilBurnerChanges', heatHarmonyClient.getOilBurnerChanges()),
         safe('pro3Status', heatHarmonyClient.getPro3Status()),
         safe('pro3OverrideStatus', heatHarmonyClient.getPro3OverrideStatus()),
+        safe('selectedTemps', heatHarmonyClient.getSelectedTemps()),
       ]);
 
       if (ping) setHeatAutomationPingStatus(ping);
       if (automationStatus) setHeatAutomationStatus(automationStatus);
-      if (automationTaskStatus) setHeatAutomationTaskStatus(automationTaskStatus);
       if (automationOverrideStatus) setOverrideStatus(automationOverrideStatus);
 
       if (oumanLatestData) setOumanLatest(oumanLatestData);
       if (oumanStatusData) setOumanStatus(oumanStatusData);
-      if (oumanTaskStatusData) setOumanTaskStatus(oumanTaskStatusData);
 
       if (heishamonLatestData) setHeishamonLatest(heishamonLatestData);
       if (heishamonStatusData) setHeishamonStatus(heishamonStatusData);
-      if (heishamonTaskStatusData) setHeishamonTaskStatus(heishamonTaskStatusData);
 
       if (trvLatestData) setTrvLatest(trvLatestData);
-      if (trvTaskStatusData) setTrvTaskStatus(trvTaskStatusData);
 
       if (oilburnerLatestData) setOilburnerLatest(oilburnerLatestData);
       if (useWaterHeaterLatestData) setUseWaterHeaterLatest(useWaterHeaterLatestData);
       if (useWaterHeaterOverrideStatus) setEnableUseWaterHeaterData(useWaterHeaterOverrideStatus);
 
       if (uptimeData) setUptime(uptimeData);
+      if (restlessFalconAvgTemp) setAvgTempLast2Days(restlessFalconAvgTemp.averageTemperature);
       if (emChangesData) setEmChanges(emChangesData);
       if (oilBurnerChangesData) setOilBurnerChanges(oilBurnerChangesData);
       if (pro3StatusData) setPro3Status(pro3StatusData);
       if (pro3OverrideStatusData) setPro3OverrideStatus(pro3OverrideStatusData);
+      if (selectedTempsData) setSelectedTemps(selectedTempsData);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -326,22 +315,6 @@ export function HomeHeating() {
     }
   };
 
-  const renderErrors = (errors: string[] | null | undefined) => {
-    if (!errors || errors.length === 0) return null;
-    return (
-      <div className="space-y-1">
-        {errors.slice(0, 5).map((e, idx) => (
-          <p key={idx} className="text-xs text-muted-foreground">
-            {e}
-          </p>
-        ))}
-        {errors.length > 5 && (
-          <p className="text-xs text-muted-foreground">…and {errors.length - 5} more</p>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6 dark">
       <div className="flex items-center justify-between">
@@ -370,8 +343,8 @@ export function HomeHeating() {
       {actionStatus && (
         <div
           className={`rounded-lg border p-3 text-sm flex items-start justify-between gap-3 ${actionStatus.type === 'error'
-              ? 'border-destructive/60 bg-destructive/10 text-destructive'
-              : 'border-emerald-600/60 bg-emerald-600/10 text-emerald-500'
+            ? 'border-destructive/60 bg-destructive/10 text-destructive'
+            : 'border-emerald-600/60 bg-emerald-600/10 text-emerald-500'
             }`}
           role={actionStatus.type === 'error' ? 'alert' : 'status'}
         >
@@ -396,7 +369,7 @@ export function HomeHeating() {
         <Card>
           <CardHeader>
             <CardTitle>HeatHarmony Status</CardTitle>
-            <CardDescription>Backend connectivity, workers, and scheduled tasks</CardDescription>
+            <CardDescription>Backend connectivity and workers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
@@ -406,40 +379,38 @@ export function HomeHeating() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">HeatHarmony serverTime: {formatDateTime(heatAutomationStatus?.serverTime)}</span>
               </div>
-            </div>
-
-            <Separator />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Ouman + Heishamon sync</span>
-                  <Badge variant={heatAutomationTaskStatus?.oumanAndHeishamonSync.status === 'Ok' ? 'default' : 'secondary'}>
-                    {heatAutomationTaskStatus?.oumanAndHeishamonSync.status ?? '—'}
-                  </Badge>
-                </div>
-                {renderErrors(heatAutomationTaskStatus?.oumanAndHeishamonSync.errors)}
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Water heating by price</span>
-                  <Badge variant={heatAutomationTaskStatus?.setUseWaterBasedOnPrice.status === 'Ok' ? 'default' : 'secondary'}>
-                    {heatAutomationTaskStatus?.setUseWaterBasedOnPrice.status ?? '—'}
-                  </Badge>
-                </div>
-                {renderErrors(heatAutomationTaskStatus?.setUseWaterBasedOnPrice.errors)}
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Inside temp by price</span>
-                  <Badge variant={heatAutomationTaskStatus?.setInsideTempBasedOnPrice.status === 'Ok' ? 'default' : 'secondary'}>
-                    {heatAutomationTaskStatus?.setInsideTempBasedOnPrice.status ?? '—'}
-                  </Badge>
-                </div>
-                {renderErrors(heatAutomationTaskStatus?.setInsideTempBasedOnPrice.errors)}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  Avg outside temp (2 days): {avgTempLast2Days === undefined ? '—' : `${avgTempLast2Days.toFixed(1)}°C`}
+                </span>
               </div>
             </div>
+            {selectedTemps && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">Selected temperatures</span>
+                  <div className="grid gap-2 md:grid-cols-4">
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <div className="text-xs text-muted-foreground">Min</div>
+                      <div className="text-sm font-medium">{selectedTemps.minTemp.toFixed(1)}°C</div>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <div className="text-xs text-muted-foreground">Mid</div>
+                      <div className="text-sm font-medium">{selectedTemps.midTemp.toFixed(1)}°C</div>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <div className="text-xs text-muted-foreground">Max</div>
+                      <div className="text-sm font-medium">{selectedTemps.maxTemp.toFixed(1)}°C</div>
+                    </div>
+                    <div className="rounded-lg border p-3 space-y-1">
+                      <div className="text-xs text-muted-foreground">Max heating period</div>
+                      <div className="text-sm font-medium">{selectedTemps.maxHeatingPeriodTemp.toFixed(1)}°C</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -597,49 +568,6 @@ export function HomeHeating() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Device Tasks</CardTitle>
-            <CardDescription>Ouman, Heishamon and TRV task status</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Ouman task</span>
-                  <Badge variant={oumanTaskStatus?.status === 'Ok' ? 'default' : 'secondary'}>
-                    {oumanTaskStatus?.status ?? '—'}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">serverTime: {formatDateTime(oumanTaskStatus?.serverTime)}</div>
-                {renderErrors(oumanTaskStatus?.errors)}
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Heishamon task</span>
-                  <Badge variant={heishamonTaskStatus?.status === 'Ok' ? 'default' : 'secondary'}>
-                    {heishamonTaskStatus?.status ?? '—'}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">serverTime: {formatDateTime(heishamonTaskStatus?.serverTime)}</div>
-                {renderErrors(heishamonTaskStatus?.errors)}
-              </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">TRV task</span>
-                  <Badge variant={trvTaskStatus?.status === 'Ok' ? 'default' : 'secondary'}>
-                    {trvTaskStatus?.status ?? '—'}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">serverTime: {formatDateTime(trvTaskStatus?.serverTime)}</div>
-                {renderErrors(trvTaskStatus?.errors ?? undefined)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Recent Changes</CardTitle>
             <CardDescription>Latest actions reported by Ouman and Heishamon</CardDescription>
           </CardHeader>
@@ -764,6 +692,7 @@ export function HomeHeating() {
                   Running: {useWaterHeaterLatest?.isRunning === undefined ? '—' : useWaterHeaterLatest.isRunning ? 'Yes' : 'No'}
                 </div>
                 <div>Last enabled: {formatDateTime(useWaterHeaterLatest?.lastEnabled)}</div>
+                <div>Last disabled: {formatDateTime(useWaterHeaterLatest?.lastDisabled)}</div>
                 <div>Override until: {formatDateTime(enableUseWaterHeaterData?.overrideUntil ?? undefined)}</div>
               </div>
 

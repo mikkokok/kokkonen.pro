@@ -37,6 +37,11 @@ import {Pro3StatusResponse, pro3StatusResponseSchema} from "./validation/pro3Sta
 import {Pro3OverrideAcceptedResponse, pro3OverrideAcceptedResponseSchema} from "./validation/pro3OverrideAcceptedResponse";
 import {Pro3OverrideCancelledResponse, pro3OverrideCancelledResponseSchema} from "./validation/pro3OverrideCancelledResponse";
 import {Pro3OverrideStatusResponse, pro3OverrideStatusResponseSchema} from "./validation/pro3OverrideStatusResponse";
+import {SelectedTempsResponse, selectedTempsResponseSchema} from "./validation/selectedTempsResponse";
+import {
+    RestlessFalconAvgTemperatureResponse,
+    restlessFalconAvgTemperatureResponseSchema,
+} from "./validation/restlessFalconAvgTemperatureResponse";
 
 export class HeatHarmonyClient {
     private baseUrl: string;
@@ -164,6 +169,31 @@ export class HeatHarmonyClient {
         const response = await handleFetch(request);
         const raw = await response.json();
         return typeof raw === 'string' ? raw : String(raw ?? '');
+    }
+
+    public async getHeatingPeriodHours(): Promise<HeatingPeriodResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/heatautomation/heatperiodhours`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return heatingPeriodResponseSchema.parse(await response.json());
+    }
+
+    public async getSelectedTemps(): Promise<SelectedTempsResponse> {
+        const request = new Request(`${this.baseUrl}api/heatharmony/heatautomation/selectedtemps`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return selectedTempsResponseSchema.parse(await response.json());
+    }
+
+    public async getRestlessFalconAvgTemperature(days: number): Promise<RestlessFalconAvgTemperatureResponse> {
+        const params = new URLSearchParams({days: String(days)});
+        const request = new Request(`${this.baseUrl}api/heatharmony/restlessfalcon/avgtemp?${params.toString()}`, {
+            method: 'GET',
+        });
+        const response = await handleFetch(request);
+        return restlessFalconAvgTemperatureResponseSchema.parse(await response.json());
     }
 
     public async getTodayElectricityPrices(): Promise<PricesResponse> {

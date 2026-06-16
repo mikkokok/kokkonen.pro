@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
-import {CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
+import {CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Brush} from 'recharts';
 
 import {backendUrl} from '../config/config';
 import {formatDateTimeFi} from '../lib/dateTimeFormat';
@@ -58,8 +58,8 @@ function HistoryLineChartCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={data}>
+        <ResponsiveContainer width="100%" height={380}>
+          <LineChart data={data} margin={{top: 10, right: 20, left: 10, bottom: 80}}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis
               dataKey="time"
@@ -69,13 +69,15 @@ function HistoryLineChartCard({
               axisLine={axisLine}
               angle={-45}
               textAnchor="end"
-              height={80}
+              height={70}
+              minTickGap={50}
             />
             <YAxis
               className="text-xs"
               tick={axisTick}
               tickLine={axisTickLine}
               axisLine={axisLine}
+              width={55}
               domain={['auto', 'auto']}
             />
             <Tooltip
@@ -90,6 +92,7 @@ function HistoryLineChartCard({
                 return Number.isFinite(v) ? valueFormatter(v) : String(value ?? '—');
               }}
             />
+            <Brush dataKey="time" height={30} stroke="var(--border)" fill="var(--muted)/0.3" travellerWidth={8} />
             <Line type="monotone" dataKey={dataKey} stroke={stroke} strokeWidth={2} dot={false} activeDot={{r: 4}} />
           </LineChart>
         </ResponsiveContainer>

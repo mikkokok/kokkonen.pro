@@ -2,7 +2,7 @@ import {useEffect, useMemo, useState} from "react";
 import {backendUrl} from "../../config/config";
 import {ElectricityClient} from "../../lib/electricity/electricityClient";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/card";
-import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
+import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush} from 'recharts';
 
 import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit} from "../../lib/electricity/validation/consumptionData";
 import {scaleConsumptionValue} from '../../lib/electricity/consumptionDisplay';
@@ -175,7 +175,7 @@ export function ElectricityDetails() {
         <CardContent>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData} margin={{top: 10, right: 12, left: 0, bottom: 24}}>
+              <LineChart data={chartData} margin={{top: 10, right: 20, left: 10, bottom: 80}}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="ts"
@@ -189,9 +189,10 @@ export function ElectricityDetails() {
                   axisLine={{stroke: axisColor}}
                   tickFormatter={formatXAxisTick}
                   interval="preserveStartEnd"
-                  minTickGap={40}
-                  tickMargin={10}
-                  height={55}
+                  minTickGap={50}
+                  angle={-45}
+                  textAnchor="end"
+                  height={70}
                 />
                 <YAxis
                   className="text-xs"
@@ -199,18 +200,13 @@ export function ElectricityDetails() {
                   stroke={axisColor}
                   tickLine={{stroke: axisColor}}
                   axisLine={{stroke: axisColor}}
-                  label={
-                    formatter.yAxisUnitLabel
-                      ? {
-                        value: formatter.yAxisUnitLabel,
-                        angle: -90,
-                        position: 'insideLeft',
-                        fill: axisColor,
-                      }
-                      : undefined
-                  }
+                  width={60}
                   domain={formatter.domain}
-                  tickFormatter={formatter.tickFormatter}
+                  tickFormatter={formatter.tickFormatter
+                    ? formatter.tickFormatter
+                    : formatter.yAxisUnitLabel
+                      ? (v: number) => `${v.toFixed(1)} ${formatter.yAxisUnitLabel}`
+                      : undefined}
                 />
                 <Tooltip
                   contentStyle={{
@@ -224,7 +220,8 @@ export function ElectricityDetails() {
                   }
                   labelFormatter={formatTooltipLabel}
                 />
-                <Legend wrapperStyle={{paddingTop: '20px'}} />
+                <Legend wrapperStyle={{paddingTop: '8px', fontSize: '12px'}} />
+                <Brush dataKey="ts" height={30} stroke="hsl(var(--border))" fill="hsl(var(--muted))/0.3" travellerWidth={8} />
                 {keys.map((key, index) => (
 
                   <Line

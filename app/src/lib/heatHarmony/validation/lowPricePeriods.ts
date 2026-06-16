@@ -6,6 +6,7 @@ export const lowPriceDateTimeRangeSchema = z.object({
   end: isoLocalOrOffsetDateTimeSchema,
   rank: z.number(),
   averagePrice: z.number(),
+  isDataValid: z.boolean().optional(),
 });
 
 export const lowPricePeriodsSchema = z.object({
