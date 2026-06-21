@@ -4,7 +4,7 @@ import {MQStatusEnum} from "./types/mqStatusEnum";
 import {ConsumptionData, consumptionDataSchema} from "./validation/consumptionData";
 import {mQStatusEnumSchema} from "./validation/mqResponse";
 import {TaskResponse, taskResponseSchema} from "./validation/taskResponse";
-import {HubConnection, HubConnectionBuilder, LogLevel} from '@microsoft/signalr';
+import {HubConnection, HubConnectionBuilder, HttpTransportType, LogLevel} from '@microsoft/signalr';
 
 export class ElectricityClient {
   private baseUrl: string;
@@ -35,8 +35,9 @@ export class ElectricityClient {
     const hubConnection = new HubConnectionBuilder()
       .withUrl(`${this.baseUrl}api/electricity/consumption`, {
         accessTokenFactory: async () => (await getAuthResponse()).accessToken,
+        transport: HttpTransportType.WebSockets | HttpTransportType.ServerSentEvents | HttpTransportType.LongPolling,
       })
-      .withAutomaticReconnect()
+      .withAutomaticReconnect([0, 1000, 3000, 5000, 10000])
       .configureLogging(LogLevel.Information)
       .build();
     return Promise.resolve(hubConnection);
