@@ -5,6 +5,8 @@ import {getMsalInstance} from './lib/auth/msal.ts';
 import ReactDOM from 'react-dom/client';
 import React from 'react';
 import {MsalProvider} from '@azure/msal-react';
+import {Provider} from 'react-redux';
+import {store} from './store/store';
 
 async function bootstrap() {
   const instance = await getMsalInstance();
@@ -13,11 +15,13 @@ async function bootstrap() {
 
   root.render(
     <React.StrictMode>
-      <MsalProvider instance={instance}>
-        <Router>
-          <App />
-        </Router>
-      </MsalProvider>
+      <Provider store={store}>
+        <MsalProvider instance={instance}>
+          <Router>
+            <App />
+          </Router>
+        </MsalProvider>
+      </Provider>
     </React.StrictMode>
   );
 }

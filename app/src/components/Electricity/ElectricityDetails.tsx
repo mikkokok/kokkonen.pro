@@ -1,10 +1,8 @@
-import {useEffect, useMemo, useState} from "react";
-import {backendUrl} from "../../config/config";
-import {ElectricityClient} from "../../lib/electricity/electricityClient";
+import {useMemo} from "react";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/card";
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush} from 'recharts';
 
-import {ConsumptionData, ConsumptionKeys, translateKey, translateUnit} from "../../lib/electricity/validation/consumptionData";
+import {ConsumptionKeys, translateKey, translateUnit} from "../../lib/electricity/validation/consumptionData";
 import {scaleConsumptionValue} from '../../lib/electricity/consumptionDisplay';
 import {formatDateTimeFi, formatTimeFi} from '../../lib/dateTimeFormat';
 import {
@@ -12,6 +10,7 @@ import {
   createTimeAxisAndTooltipFormatters,
   TimeSeriesChartPoint,
 } from '../../lib/charts/timeSeriesChart';
+import {useAppSelector} from "../../store/hooks";
 
 const cumulativePowerConsumptionKeys: ConsumptionKeys[] = ['CumulativePowerConsumption'];
 const cumulativePowerYieldKeys: ConsumptionKeys[] = ['CumulativePowerYield'];
@@ -26,27 +25,7 @@ function scaleValue(key: ConsumptionKeys, rawValue: number): number {
 }
 
 export function ElectricityDetails() {
-  const electricityClient = useMemo(() => new ElectricityClient(backendUrl), []);
-  const [historyData, setHistoryData] = useState<ConsumptionData[] | undefined>(undefined);
-
-  useEffect(() => {
-    const fetchHistoryData = async () => {
-      try {
-        const historyData = await electricityClient.getHistoryData();
-        setHistoryData(historyData);
-      } catch (error) {
-        console.log('Failed to fetch history data', error);
-      }
-    };
-
-    void fetchHistoryData();
-
-    const intervalId = setInterval(() => {
-      void fetchHistoryData();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
-  }, [electricityClient]);
+  const historyData = useAppSelector((state) => state.electricity.historyData);
 
   const getChartFormatter = (keys: ConsumptionKeys[]) => {
     const isVoltageChart = keys.every(key => voltageKeys.includes(key));

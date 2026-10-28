@@ -2,6 +2,7 @@ import ElectricityConsumption from "./ElectricityConsumption"
 import {ElectricityDetails} from "./ElectricityDetails"
 import {CardContent} from "../ui/card"
 import ElectricityPrices from "./ElectricityPrices"
+import ElectricityCurrentReading from "./ElectricityCurrentReading"
 import {
   Tabs,
   TabsContent,
@@ -14,12 +15,18 @@ export default function Electricity() {
     <Tabs defaultValue="overview">
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="current">Current</TabsTrigger>
         <TabsTrigger value="details">Details</TabsTrigger>
         <TabsTrigger value="prices">Prices</TabsTrigger>
       </TabsList>
       <TabsContent value="overview">
         <CardContent>
           <ElectricityConsumption />
+        </CardContent>
+      </TabsContent>
+      <TabsContent value="current">
+        <CardContent>
+          <ElectricityCurrentReading />
         </CardContent>
       </TabsContent>
       <TabsContent value="details">
