@@ -3,16 +3,43 @@ import {useEffect, useMemo, useState} from "react";
 import {backendUrl} from "../config/config";
 import {HeatHarmonyClient} from "../lib/heatHarmony/heatHarmonyClient";
 import {OumanLatestResponse} from "../lib/heatHarmony/validation/oumanLatestResponse";
-import {TemperatureIcon} from "@hugeicons/core-free-icons";
+import {ElectricHome01Icon, TemperatureIcon} from "@hugeicons/core-free-icons";
 import {HugeiconsIcon} from '@hugeicons/react';
 import {useCallback} from "react";
 import {useMsal} from "@azure/msal-react";
 import {InteractionStatus} from "@azure/msal-browser";
+import {useAppSelector} from "../store/hooks";
+import {spotPriceAt, usedPriceEurPerKWh, yieldPriceEurPerKWh} from "../lib/electricity/pricing";
+import {formatTimeFi} from "../lib/dateTimeFormat";
+
+const PRICE_PERIOD_HOURS = 0.25;
 
 function Home() {
   const {instance, accounts, inProgress} = useMsal();
   const heatHarmonyClient = useMemo(() => new HeatHarmonyClient(backendUrl), []);
   const [oumanLatest, setOumanLatest] = useState<OumanLatestResponse | undefined>(undefined);
+  const latestConsumption = useAppSelector((state) => state.electricity.latestConsumptionData);
+  const spotPriceByInterval = useAppSelector((state) => state.electricity.spotPriceByInterval);
+  const spotPriceLoading = useAppSelector((state) => state.electricity.spotPriceLoading);
+  const spotPriceError = useAppSelector((state) => state.electricity.spotPriceError);
+
+  const electricityNow = useMemo(() => {
+    if (!latestConsumption) return null;
+
+    const timestamp = new Date(latestConsumption.timestamp);
+    const spotPrice = Number.isNaN(timestamp.getTime()) ? undefined : spotPriceAt(spotPriceByInterval, timestamp);
+    const consumptionKW = (latestConsumption.data.ActualConsumption ?? 0) / 1000;
+    const returnKW = (latestConsumption.data.ActualReturndelivery ?? 0) / 1000;
+
+    if (spotPrice === undefined) {
+      return {timestamp, consumptionKW, returnKW, spotPrice, usedPrice: undefined, periodCostEur: undefined};
+    }
+
+    const usedPrice = usedPriceEurPerKWh(spotPrice);
+    const periodCostEur =
+      (consumptionKW * usedPrice - returnKW * yieldPriceEurPerKWh(spotPrice)) * PRICE_PERIOD_HOURS;
+    return {timestamp, consumptionKW, returnKW, spotPrice, usedPrice, periodCostEur};
+  }, [latestConsumption, spotPriceByInterval]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -68,6 +95,48 @@ function Home() {
             <p className="text-xs text-muted-foreground">
               Target: {oumanLatest?.insideTempDemand?.toFixed(1)}°C
             </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Electricity now</CardTitle>
+            <HugeiconsIcon icon={ElectricHome01Icon} className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {electricityNow ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {electricityNow.returnKW > electricityNow.consumptionKW
+                    ? `−${electricityNow.returnKW.toFixed(2)} kW`
+                    : `${electricityNow.consumptionKW.toFixed(2)} kW`}
+                  {electricityNow.periodCostEur !== undefined && (
+                    <span className="text-base font-medium text-muted-foreground">
+                      {' '}/ {(electricityNow.periodCostEur * 100).toFixed(2)} c per 15 min
+                    </span>
+                  )}
+                </div>
+                {(electricityNow.usedPrice === undefined ||
+                  electricityNow.periodCostEur === undefined ||
+                  electricityNow.spotPrice === undefined) && (
+                    <p className="text-xs text-muted-foreground">
+                      {spotPriceError
+                        ? `Spot price fetch failed: ${spotPriceError}`
+                        : spotPriceLoading
+                          ? 'Loading spot price...'
+                          : `No spot price for ${formatTimeFi(electricityNow.timestamp, {minute: undefined})}`}
+                    </p>
+                  )}
+                {electricityNow.usedPrice !== undefined && electricityNow.spotPrice !== undefined && (
+                  <p className="text-xs text-muted-foreground">
+                    Price {(electricityNow.usedPrice * 100).toFixed(2)} c/kWh (spot {(electricityNow.spotPrice * 100).toFixed(2)} + fees{' '}
+                    {((electricityNow.usedPrice - electricityNow.spotPrice) * 100).toFixed(2)})
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">Updated {formatTimeFi(electricityNow.timestamp)}</p>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">Waiting for data...</div>
+            )}
           </CardContent>
         </Card>
       </div>

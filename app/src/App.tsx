@@ -7,9 +7,14 @@ import {Route, Routes} from 'react-router-dom';
 import Login from './components/Login';
 import Electricity from './components/Electricity/Electricity';
 import Devices from './components/Devices/Devices';
+import Lights from './components/Lights/Lights';
+import PowerOutlets from './components/PowerOutlets/PowerOutlets';
 import RequireAuth from './components/RequireAuth';
+import {useElectricityDataSync} from './lib/electricity/useElectricityDataSync';
 
 function App() {
+  useElectricityDataSync();
+
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
       <Header />
@@ -24,6 +29,8 @@ function App() {
             <Route path="/electricity" element={<RequireAuth><Electricity /></RequireAuth>} />
             <Route path="/home-heating" element={<RequireAuth><HomeHeatingTabs /></RequireAuth>} />
             <Route path="/devices" element={<RequireAuth><Devices /></RequireAuth>} />
+            <Route path="/lights" element={<RequireAuth><Lights /></RequireAuth>} />
+            <Route path="/power-outlets" element={<RequireAuth><PowerOutlets /></RequireAuth>} />
             <Route path="*" element={<RequireAuth><Home /></RequireAuth>} />
           </Routes>
         </div>
