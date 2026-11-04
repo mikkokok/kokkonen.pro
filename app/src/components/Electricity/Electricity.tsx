@@ -3,6 +3,7 @@ import {ElectricityDetails} from "./ElectricityDetails"
 import {CardContent} from "../ui/card"
 import ElectricityPrices from "./ElectricityPrices"
 import ElectricityCurrentReading from "./ElectricityCurrentReading"
+import {useElectricityHistorySync} from "../../lib/electricity/useElectricityDataSync"
 import {
   Tabs,
   TabsContent,
@@ -11,6 +12,8 @@ import {
 } from "../ui/tabs"
 
 export default function Electricity() {
+  useElectricityHistorySync()
+
   return (
     <Tabs defaultValue="overview">
       <TabsList>

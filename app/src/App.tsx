@@ -1,16 +1,18 @@
+import {lazy, Suspense} from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './components/Home';
-import {HomeHeatingTabs} from './components/HomeHeatingTabs';
 import NavigationBar from './components/NavigationBar';
 import {Route, Routes} from 'react-router-dom';
-import Login from './components/Login';
-import Electricity from './components/Electricity/Electricity';
-import Devices from './components/Devices/Devices';
-import Lights from './components/Lights/Lights';
-import PowerOutlets from './components/PowerOutlets/PowerOutlets';
 import RequireAuth from './components/RequireAuth';
 import {useElectricityDataSync} from './lib/electricity/useElectricityDataSync';
+
+const Login = lazy(() => import('./components/Login'));
+const Electricity = lazy(() => import('./components/Electricity/Electricity'));
+const HomeHeatingTabs = lazy(() => import('./components/HomeHeatingTabs').then((module) => ({default: module.HomeHeatingTabs})));
+const Devices = lazy(() => import('./components/Devices/Devices'));
+const Lights = lazy(() => import('./components/Lights/Lights'));
+const PowerOutlets = lazy(() => import('./components/PowerOutlets/PowerOutlets'));
 
 function App() {
   useElectricityDataSync();
@@ -23,16 +25,18 @@ function App() {
           <NavigationBar />
         </div>
         <div className='flex-1 overflow-auto p-4'>
-          <Routes>
-            <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/electricity" element={<RequireAuth><Electricity /></RequireAuth>} />
-            <Route path="/home-heating" element={<RequireAuth><HomeHeatingTabs /></RequireAuth>} />
-            <Route path="/devices" element={<RequireAuth><Devices /></RequireAuth>} />
-            <Route path="/lights" element={<RequireAuth><Lights /></RequireAuth>} />
-            <Route path="/power-outlets" element={<RequireAuth><PowerOutlets /></RequireAuth>} />
-            <Route path="*" element={<RequireAuth><Home /></RequireAuth>} />
-          </Routes>
+          <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Loading page...</p>}>
+            <Routes>
+              <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/electricity" element={<RequireAuth><Electricity /></RequireAuth>} />
+              <Route path="/home-heating" element={<RequireAuth><HomeHeatingTabs /></RequireAuth>} />
+              <Route path="/devices" element={<RequireAuth><Devices /></RequireAuth>} />
+              <Route path="/lights" element={<RequireAuth><Lights /></RequireAuth>} />
+              <Route path="/power-outlets" element={<RequireAuth><PowerOutlets /></RequireAuth>} />
+              <Route path="*" element={<RequireAuth><Home /></RequireAuth>} />
+            </Routes>
+          </Suspense>
         </div>
       </div>
       <Footer />

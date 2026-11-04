@@ -1,5 +1,11 @@
 const DEFAULT_LOCALE = 'fi-FI';
 const DEFAULT_TIME_ZONE = 'Europe/Helsinki';
+const dateFormatter = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+  timeZone: DEFAULT_TIME_ZONE,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+});
 
 type DateLike = Date | string | number;
 
@@ -55,10 +61,5 @@ export function formatDateFi(value: DateLike | null | undefined): string {
   const date = toDate(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return new Intl.DateTimeFormat(DEFAULT_LOCALE, {
-    timeZone: DEFAULT_TIME_ZONE,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-  }).format(date);
+  return dateFormatter.format(date);
 }
