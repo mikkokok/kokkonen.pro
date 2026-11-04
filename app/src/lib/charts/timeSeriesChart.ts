@@ -1,5 +1,5 @@
 export type TimestampedDataPoint<K extends string> = {
-  timestamp: string;
+  timestamp: string | number;
   data: Partial<Record<K, number>>;
 };
 
@@ -7,7 +7,7 @@ export type TimeSeriesChartPoint = {
   ts: number;
 } & Record<string, number | undefined>;
 
-export const DEFAULT_MAX_CHART_POINTS = 2500;
+export const DEFAULT_MAX_CHART_POINTS = 800;
 
 export function buildDownsampledTimeSeriesChartData<K extends string>(
   history: Array<TimestampedDataPoint<K>> | null | undefined,
@@ -26,7 +26,7 @@ export function buildDownsampledTimeSeriesChartData<K extends string>(
 
   const parsed = history
     .map((record) => {
-      const ts = new Date(record.timestamp).getTime();
+      const ts = typeof record.timestamp === 'number' ? record.timestamp : new Date(record.timestamp).getTime();
       return {ts, data: record.data};
     })
     .filter((x) => Number.isFinite(x.ts));

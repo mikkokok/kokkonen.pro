@@ -136,13 +136,13 @@ export const fetchHistoryData = createAsyncThunk<ConsumptionData[], boolean | un
   async () => electricityClient.getHistoryData(),
   {
     condition: (force = false, {getState}) => {
-      if (force) {
-        return true;
-      }
-
       const state = getState().electricity;
       if (state.historyLoading) {
         return false;
+      }
+
+      if (force) {
+        return true;
       }
 
       if (state.historyLastFetchedAt === null) {
@@ -169,13 +169,13 @@ export const fetchMqStatus = createAsyncThunk<
   },
   {
     condition: (force = false, {getState}) => {
-      if (force) {
-        return true;
-      }
-
       const state = getState().electricity;
       if (state.mqStatusLoading) {
         return false;
+      }
+
+      if (force) {
+        return true;
       }
 
       if (state.mqStatusLastFetchedAt === null) {
@@ -196,13 +196,13 @@ export const fetchSpotPrices = createAsyncThunk<Record<string, number>, boolean 
   },
   {
     condition: (force = false, {getState}) => {
-      if (force) {
-        return true;
-      }
-
       const state = getState().electricity;
       if (state.spotPriceLoading) {
         return false;
+      }
+
+      if (force) {
+        return true;
       }
 
       if (state.spotPriceLastFetchedAt === null) {

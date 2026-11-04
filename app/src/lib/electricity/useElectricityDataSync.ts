@@ -88,7 +88,7 @@ export function useElectricityDataSync() {
       return;
     }
 
-    void dispatch(fetchMqStatus(true));
+    void dispatch(fetchMqStatus());
 
     const intervalId = window.setInterval(() => {
       void dispatch(fetchMqStatus(true));
@@ -105,27 +105,7 @@ export function useElectricityDataSync() {
       return;
     }
 
-    // Refetch once history is loaded so the price range covers all history.
-    void dispatch(fetchHistoryData(true)).finally(() => {
-      void dispatch(fetchSpotPrices(true));
-    });
-
-    const intervalId = window.setInterval(() => {
-      void dispatch(fetchHistoryData(true));
-    }, 5 * 60 * 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [accounts.length, dispatch, inProgress]);
-
-  useEffect(() => {
-    if (inProgress !== InteractionStatus.None) {
-      return;
-    }
-    if (accounts.length === 0) {
-      return;
-    }
-
-    void dispatch(fetchSpotPrices(true));
+    void dispatch(fetchSpotPrices());
 
     const intervalId = window.setInterval(() => {
       void dispatch(fetchSpotPrices(true));
@@ -137,4 +117,27 @@ export function useElectricityDataSync() {
   return {
     isAuthInitializing: inProgress !== InteractionStatus.None,
   };
+}
+
+export function useElectricityHistorySync() {
+  const dispatch = useAppDispatch();
+  const {accounts, inProgress} = useMsal();
+
+  useEffect(() => {
+    if (inProgress !== InteractionStatus.None || accounts.length === 0) {
+      return;
+    }
+
+    void dispatch(fetchHistoryData()).then((action) => {
+      if (fetchHistoryData.fulfilled.match(action)) {
+        void dispatch(fetchSpotPrices(true));
+      }
+    });
+
+    const intervalId = window.setInterval(() => {
+      void dispatch(fetchHistoryData());
+    }, 5 * 60 * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [accounts.length, dispatch, inProgress]);
 }
